@@ -18,7 +18,7 @@
 
 ## Tải về
 
-Mở [trang bản phát hành mới nhất](https://github.com/trunghuynhvan0310/PDFTools/releases/tag/latest) và tải `app-arm64-v8a-release.apk` (phù hợp với hầu hết điện thoại đời 2017 trở lại đây).
+Mở [trang bản phát hành mới nhất](https://github.com/trunghuynhvan0310/PDFTools/releases/tag/latest) và tải `app-release.apk` (bản 64-bit arm64, phù hợp với hầu hết điện thoại đời 2017 trở lại đây).
 
 - Cần Android 7.0 trở lên.
 - Trình xem PDF tích hợp chỉ chạy trên Android 12 có bản cập nhật hệ thống mới nhất; các máy khác sẽ mở PDF bằng ứng dụng PDF của máy.
