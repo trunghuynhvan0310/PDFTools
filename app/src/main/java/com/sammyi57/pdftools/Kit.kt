@@ -146,7 +146,7 @@ fun fmtSize(b: Long?): String = when {
 // dd/mm/yyyy everywhere a date is shown.
 fun fmtDay(ms: Long): String = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(ms))
 fun fmtDate(ms: Long): String = if (daysAgo(ms) == 0) fmtTime(ms) else fmtDay(ms)
-fun plural(n: Int, word: String) = "$n $word${if (n == 1) "" else "s"}"
+fun plural(n: Int, word: String) = "$n ${when (word) { "file" -> "tệp"; "folder" -> "thư mục"; "page" -> "trang"; "item" -> "mục"; "area" -> "vùng"; else -> word }}"
 
 // File names in lists drop the extension: the glyph beside them already says PDF, DOC, JPG or ZIP.
 fun stem(name: String) = name.replace(Regex("\\.(pdf|docx|jpg|zip)$", RegexOption.IGNORE_CASE), "")
@@ -162,8 +162,8 @@ private fun daysAgo(ms: Long): Int {
 fun dayLabel(ms: Long): String {
   val days = daysAgo(ms)
   val word = when {
-    days == 0 -> "Today"
-    days == 1 -> "Yesterday"
+    days == 0 -> "Hôm nay"
+    days == 1 -> "Hôm qua"
     days in 2..6 -> SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(ms))
     else -> ""
   }
@@ -586,7 +586,7 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
           if (value.isEmpty()) T(placeholder, Type.body, c.faint, maxLines = 1)
           inner()
         }
-        if (value.isNotEmpty()) IconBtn(I.closeCircle, 18.dp, c.faint, "Clear") { onChange("") }
+        if (value.isNotEmpty()) IconBtn(I.closeCircle, 18.dp, c.faint, "Xóa") { onChange("") }
       }
     },
   )
@@ -652,7 +652,7 @@ fun AppDialog(onDismiss: () -> Unit, title: String, subtitle: String? = null, co
               T(title, Type.title.copy(fontSize = Type.title.fontSize * 0.8f, lineHeight = Type.title.lineHeight * 0.8f))
               if (!subtitle.isNullOrEmpty()) T(subtitle, Type.small, c.sub, Modifier.padding(top = 4.dp))
             }
-            IconBtn(I.close, 20.dp, c.faint, "Close", onClick = onDismiss)
+            IconBtn(I.close, 20.dp, c.faint, "Đóng", onClick = onDismiss)
           }
           content()
         }
@@ -665,7 +665,7 @@ fun AppDialog(onDismiss: () -> Unit, title: String, subtitle: String? = null, co
 fun ConfirmDialog(
   title: String,
   message: String,
-  confirmLabel: String = "Confirm",
+  confirmLabel: String = "Xác nhận",
   danger: Boolean = false,
   requireTyping: String? = null,
   onDismiss: () -> Unit,
@@ -677,11 +677,11 @@ fun ConfirmDialog(
   AppDialog(onDismiss, title) {
     T(message, Type.body, c.sub, Modifier.padding(top = 12.dp, bottom = 16.dp))
     if (requireTyping != null) {
-      T("To confirm, type “$requireTyping” below:", Type.small, modifier = Modifier.padding(bottom = 8.dp))
-      Field(typed, { typed = it }, Modifier.padding(bottom = 18.dp), placeholder = "Type \"$requireTyping\"", onDone = go)
+      T("Để xác nhận, hãy nhập “$requireTyping” bên dưới:", Type.small, modifier = Modifier.padding(bottom = 8.dp))
+      Field(typed, { typed = it }, Modifier.padding(bottom = 18.dp), placeholder = "Nhập \"$requireTyping\"", onDone = go)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-      Btn("Cancel", Modifier.weight(1f), kind = BtnKind.Secondary, onClick = onDismiss)
+      Btn("Hủy", Modifier.weight(1f), kind = BtnKind.Secondary, onClick = onDismiss)
       Btn(confirmLabel, Modifier.weight(1f), kind = if (danger) BtnKind.Danger else BtnKind.Primary, enabled = match, onClick = go)
     }
   }
@@ -697,8 +697,8 @@ fun PromptDialog(
   initial: String = "",
   subtitle: String? = null,
   placeholder: String = "",
-  submitLabel: String = "Save",
-  cancelLabel: String = "Cancel",
+  submitLabel: String = "Lưu",
+  cancelLabel: String = "Hủy",
   keyboard: KeyboardType = KeyboardType.Text,
   onClose: () -> Unit,
   onDismiss: () -> Unit = onClose,

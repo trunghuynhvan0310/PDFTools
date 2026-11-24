@@ -221,11 +221,11 @@ object Backup {
 
   /** Sync and Drive errors in words people can act on, instead of raw exceptions or API bodies. */
   fun describe(e: Throwable): String = when {
-    e is DriveError && e.status == 401 -> "Google sign-in expired. Turn sync off and on again in Settings."
-    e is DriveError && (e.status == 403 || e.status == 429) -> "Google Drive is limiting requests right now. Sync will try again later."
-    e is DriveError -> "Google Drive had a problem (error ${e.status}). Sync will try again later."
-    e is IOException -> "Couldn’t reach Google Drive. Check your connection; sync tries again when you open Files or save a file."
-    else -> e.message ?: "Something went wrong."
+    e is DriveError && e.status == 401 -> "Phiên đăng nhập Google đã hết hạn. Hãy tắt rồi bật lại đồng bộ trong Cài đặt."
+    e is DriveError && (e.status == 403 || e.status == 429) -> "Google Drive đang giới hạn yêu cầu. Đồng bộ sẽ thử lại sau."
+    e is DriveError -> "Google Drive gặp sự cố (lỗi ${e.status}). Đồng bộ sẽ thử lại sau."
+    e is IOException -> "Không kết nối được Google Drive. Hãy kiểm tra mạng; đồng bộ sẽ thử lại khi bạn mở Tệp hoặc lưu tệp."
+    else -> e.message ?: "Đã xảy ra lỗi."
   }
 
   // ── Local side ──────────────────────────────────────────────────────────
@@ -534,7 +534,7 @@ object Backup {
     }
     remember(email, DriveListing(remoteFolders.keys.toList(), remote.map { (rel, r) -> DriveFile(r.id, splitRel(rel).second, splitRel(rel).first, r.size, parseTime(r.modified), r.modified) }))
     if (!allowDriveDeletes) {
-      throw UserError("${missingInDrive.size} PDFs are missing from Google Drive, so they were kept on this phone. Restore them from Drive's Trash, or delete them here to finish syncing.")
+      throw UserError("${missingInDrive.size} PDF bị thiếu trên Google Drive nên được giữ lại trên điện thoại. Hãy khôi phục từ Thùng rác của Drive, hoặc xóa chúng ở đây để hoàn tất đồng bộ.")
     }
     save()
   }
@@ -544,7 +544,7 @@ object Backup {
     val base = rel.replace(Regex("\\.pdf$", RegexOption.IGNORE_CASE), "")
     var i = 1
     while (true) {
-      val name = "$base (Drive copy${if (i > 1) " $i" else ""}).pdf"
+      val name = "$base (bản sao Drive${if (i > 1) " $i" else ""}).pdf"
       if (name !in taken && !localFile(name).exists()) return name
       i++
     }
@@ -617,7 +617,7 @@ object Backup {
    * on. `onProgress` gets the count done.
    */
   suspend fun downloadToPhone(files: List<DriveFile>, onProgress: (Int) -> Unit) = withContext(Dispatchers.IO) {
-    val email = state.email?.takeIf { state.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = state.email?.takeIf { state.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     val done = java.util.concurrent.atomic.AtomicInteger()
     val slots = Semaphore(3) // a few at once: much faster than one by one, without starving a weak connection
     withToken(email) { token ->
@@ -656,7 +656,7 @@ object Backup {
   /** Folders and PDFs in the synced Drive folder (one level of folders, like the phone), files newest first. */
   suspend fun list(): DriveListing = withContext(Dispatchers.IO) {
     val s = state
-    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     withToken(email) { token ->
       val rootId = ensureRoot(token, s.folderId)
       val files = ArrayList<DriveFile>()
@@ -677,13 +677,13 @@ object Backup {
   /** Uploads a copy of any saved file (Word doc, JPEGs…) to the Drive folder. Sync only handles PDFs, so it's left alone. */
   suspend fun saveCopy(f: Saved, mime: String) = withContext(Dispatchers.IO) {
     val s = state
-    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     withToken(email) { token -> uploadToDrive(token, File(f.path), f.name, ensureRoot(token, s.folderId), null, mime) }
   }
 
   /** A temporary local copy of a Drive file (in the cache, which Android may clear), for opening, sharing or a tool. */
   suspend fun fetch(f: DriveFile): Picked = withContext(Dispatchers.IO) {
-    val email = state.email?.takeIf { state.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = state.email?.takeIf { state.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     withToken(email) { token ->
       // Under its id, so same-named files from different folders don't overwrite each other.
       val dest = File(appContext.cacheDir, "drive/${f.id}/${cleanName(f.name)}")
@@ -704,14 +704,14 @@ object Backup {
 
   suspend fun renameFolder(old: String, typed: String) = withContext(Dispatchers.IO) {
     val s = state
-    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     val name = cleanName(typed)
     if (name.isEmpty() || name == old) return@withContext
-    val target = phoneFolder(name) ?: throw UserError("That name can't be used for a folder.")
+    val target = phoneFolder(name) ?: throw UserError("Không thể dùng tên này cho thư mục.")
     withToken(email) { token ->
       val folders = driveFolders(token, ensureRoot(token, s.folderId))
-      if (name in folders || target.exists()) throw UserError("A folder named \"$name\" already exists.")
-      val id = folders[old] ?: throw UserError("This folder is no longer in Drive.")
+      if (name in folders || target.exists()) throw UserError("Đã có thư mục tên \"$name\".")
+      val id = folders[old] ?: throw UserError("Thư mục này không còn trên Drive.")
       call(token, "$API/files/$id", "PATCH", JSONObject().put("name", name))
     }
     phoneFolder(old)?.takeIf { it.exists() && it.renameTo(target) }?.let { relinkFolder(it.path, target.path) }
@@ -724,7 +724,7 @@ object Backup {
   /** Settings → Delete all, phone and Drive: everything in the Drive folder (files, folders, Drive-only copies) goes to Drive's Trash, then the phone is cleared. */
   suspend fun deleteEverything() = withContext(Dispatchers.IO) {
     val s = state
-    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     withToken(email) { token -> for (item in listChildren(token, ensureRoot(token, s.folderId))) trashInDrive(token, item.id) }
     update { x -> if (x.email != email) x else x.copy(entries = emptyMap(), driveOnly = emptyMap(), folders = emptyMap()) }
     listing = email to DriveListing(emptyList(), emptyList())
@@ -734,7 +734,7 @@ object Backup {
   /** Moves the folder to Drive's Trash and deletes it from this phone too. */
   suspend fun deleteFolder(name: String) = withContext(Dispatchers.IO) {
     val s = state
-    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Google Drive sync is off.")
+    val email = s.email?.takeIf { s.enabled } ?: throw UserError("Đồng bộ Google Drive đang tắt.")
     withToken(email) { token -> driveFolders(token, ensureRoot(token, s.folderId))[name]?.let { trashInDrive(token, it) } }
     phoneFolder(name)?.deleteRecursively()
     val inside = { rel: String -> splitRel(rel).first == name }

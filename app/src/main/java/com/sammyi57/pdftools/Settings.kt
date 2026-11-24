@@ -56,26 +56,26 @@ fun SettingsTab() {
   val version = remember { runCatching { appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName }.getOrNull() ?: "" }
 
   Screen {
-    LargeTitle("Settings")
+    LargeTitle("Cài đặt")
 
-    GroupLabel("Appearance", first = true)
+    GroupLabel("Giao diện", first = true)
     ThemePicker()
 
-    GroupLabel("Storage")
+    GroupLabel("Bộ nhớ")
     Group {
-      ListRow("Saved files", first = true, lead = { Lead(I.folderOutline) }, value = files.size.toString())
-      ListRow("Space used", lead = { Lead(I.harddisk) }, value = fmtSize(files.sumOf { it.size }))
+      ListRow("Tệp đã lưu", first = true, lead = { Lead(I.folderOutline) }, value = files.size.toString())
+      ListRow("Dung lượng đã dùng", lead = { Lead(I.harddisk) }, value = fmtSize(files.sumOf { it.size }))
       ListRow(
-        "Delete all saved files", lead = { Lead(I.trashCanOutline, true) }, danger = true, value = if (wiping) "Deleting…" else null,
+        "Xóa tất cả tệp đã lưu", lead = { Lead(I.trashCanOutline, true) }, danger = true, value = if (wiping) "Đang xóa…" else null,
         onClick = if (files.isEmpty() || wiping) null else ({ if (Backup.hasDriveCopies(files.map { it.path })) clearChoice = true else clearConfirm = true }),
       )
     }
 
-    GroupLabel("Scanning")
+    GroupLabel("Quét")
     Group {
       ListRow(
-        "Make scans searchable", first = true, lead = { Lead(I.textRecognition) },
-        subtitle = "Reads the text when you save a scan, so you can search and copy it. Runs on this phone; saving takes a little longer.",
+        "Làm bản quét tìm kiếm được", first = true, lead = { Lead(I.textRecognition) },
+        subtitle = "Đọc chữ khi bạn lưu bản quét, để có thể tìm kiếm và sao chép. Chạy ngay trên điện thoại; việc lưu sẽ lâu hơn một chút.",
         onClick = { ScanPrefs.save(!ScanPrefs.searchable) },
       ) { Toggle(ScanPrefs.searchable) { ScanPrefs.save(it) } }
     }
@@ -83,24 +83,24 @@ fun SettingsTab() {
     GroupLabel("Google Drive")
     DriveBackup()
 
-    GroupLabel("Privacy")
+    GroupLabel("Quyền riêng tư")
     Group {
       if (Backup.state.enabled) {
-        ListRow("Processed on this phone", first = true, lead = { Lead(I.cellphoneLock) }, subtitle = "Every tool runs on the device. Your PDFs sync only with your own Google Drive, and nobody else sees them.")
+        ListRow("Xử lý ngay trên điện thoại", first = true, lead = { Lead(I.cellphoneLock) }, subtitle = "Mọi công cụ chạy trên thiết bị. PDF của bạn chỉ đồng bộ với Google Drive của chính bạn, không ai khác thấy được.")
       } else {
-        ListRow("Files stay on this phone", first = true, lead = { Lead(I.cellphoneLock) }, subtitle = "Every tool runs on the device. PDFs leave it only if you turn on Google Drive sync.")
+        ListRow("Tệp nằm trên điện thoại này", first = true, lead = { Lead(I.cellphoneLock) }, subtitle = "Mọi công cụ chạy trên thiết bị. PDF chỉ rời khỏi máy nếu bạn bật đồng bộ Google Drive.")
       }
-      ListRow("No account needed, no tracking", lead = { Lead(I.accountOffOutline) }, subtitle = "No sign-up, no analytics, no ads.")
-      ListRow("Works offline", lead = { Lead(I.airplane) }, subtitle = "Every tool works in airplane mode. Syncing waits until you're online.")
+      ListRow("Không cần tài khoản, không theo dõi", lead = { Lead(I.accountOffOutline) }, subtitle = "Không đăng ký, không phân tích, không quảng cáo.")
+      ListRow("Dùng được khi không có mạng", lead = { Lead(I.airplane) }, subtitle = "Mọi công cụ hoạt động ở chế độ máy bay. Việc đồng bộ chờ đến khi có mạng.")
     }
 
-    GroupLabel("About")
+    GroupLabel("Giới thiệu")
     Group {
-      ListRow("Version", first = true, lead = { Lead(I.informationOutline) }, value = version)
-      ListRow("PDF engine", lead = { Lead(I.codeTags) }, value = "PdfBox")
-      ListRow("Privacy Policy & Terms", lead = { Lead(I.shieldCheckOutline) }, chevron = true, onClick = { terms = true })
+      ListRow("Phiên bản", first = true, lead = { Lead(I.informationOutline) }, value = version)
+      ListRow("Bộ xử lý PDF", lead = { Lead(I.codeTags) }, value = "PdfBox")
+      ListRow("Chính sách quyền riêng tư & Điều khoản", lead = { Lead(I.shieldCheckOutline) }, chevron = true, onClick = { terms = true })
       ListRow(
-        "Send feedback", lead = { Lead(I.messageTextOutline) }, subtitle = "Tell us what to fix or add. Opens a short form.",
+        "Gửi phản hồi", lead = { Lead(I.messageTextOutline) }, subtitle = "Cho chúng tôi biết cần sửa hay thêm gì. Mở một biểu mẫu ngắn.",
         onClick = { openUrl(FEEDBACK_FORM) },
       ) { Icon(I.openInNew, 18.dp, c.faint) }
     }
@@ -109,17 +109,17 @@ fun SettingsTab() {
   if (terms) FullSheet({ terms = false }) { Consent(onClose = { terms = false }) }
   if (clearConfirm) {
     ConfirmDialog(
-      "Delete all saved files?", "${plural(files.size, "file")} made in PDF Tools will be removed. The PDFs you picked as input are not touched.",
-      "Delete all", danger = true, requireTyping = "confirm", onDismiss = { clearConfirm = false },
+      "Xóa tất cả tệp đã lưu?", "${plural(files.size, "file")} tạo bởi PDF Tools sẽ bị xóa. Các PDF bạn đã chọn làm đầu vào không bị ảnh hưởng.",
+      "Xóa tất cả", danger = true, requireTyping = "xác nhận", onDismiss = { clearConfirm = false },
     ) { clearFiles() }
   }
   if (clearChoice) {
-    AppDialog({ clearChoice = false }, "Delete all saved files?", "${plural(files.size, "file")} made in PDF Tools. They're also in your Google Drive.") {
+    AppDialog({ clearChoice = false }, "Xóa tất cả tệp đã lưu?", "${plural(files.size, "file")} tạo bởi PDF Tools. Chúng cũng có trong Google Drive của bạn.") {
       Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Btn("Delete from this phone only", Modifier.fillMaxWidth(), I.cellphoneRemove, BtnKind.Secondary) { clearAll(true) }
-        Btn("Delete from phone and Drive", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { clearChoice = false; driveConfirm = true }
+        Btn("Chỉ xóa khỏi điện thoại", Modifier.fillMaxWidth(), I.cellphoneRemove, BtnKind.Secondary) { clearAll(true) }
+        Btn("Xóa khỏi điện thoại và Drive", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { clearChoice = false; driveConfirm = true }
         T(
-          "Phone only keeps everything in Drive; download files again from Files → Google Drive. Phone and Drive moves the Drive copies to Drive's Trash for 30 days.",
+          "Chỉ xóa khỏi điện thoại sẽ giữ mọi thứ trên Drive; tải lại tệp từ Tệp → Google Drive. Xóa khỏi điện thoại và Drive sẽ chuyển các bản trên Drive vào Thùng rác của Drive trong 30 ngày.",
           Type.small, c.sub, align = TextAlign.Center,
         )
       }
@@ -127,8 +127,8 @@ fun SettingsTab() {
   }
   if (driveConfirm) {
     ConfirmDialog(
-      "Delete from phone and Drive?", "${plural(files.size, "file")} will be removed from this phone. Everything in the PDF Tools folder in your Drive, folders and Drive-only files included, goes to Drive's Trash for 30 days.",
-      "Delete all", danger = true, requireTyping = "confirm", onDismiss = { driveConfirm = false },
+      "Xóa khỏi điện thoại và Drive?", "${plural(files.size, "file")} sẽ bị xóa khỏi điện thoại. Mọi thứ trong thư mục PDF Tools trên Drive, gồm cả thư mục và tệp chỉ có trên Drive, sẽ vào Thùng rác của Drive trong 30 ngày.",
+      "Xóa tất cả", danger = true, requireTyping = "xác nhận", onDismiss = { driveConfirm = false },
     ) { wipeBoth() }
   }
 }
@@ -151,29 +151,29 @@ private fun DriveBackup() {
     scope.launch {
       busy = true
       error = ""
-      try { Backup.connect() } catch (e: Exception) { error = e.message ?: "Google sign-in failed." }
+      try { Backup.connect() } catch (e: Exception) { error = e.message ?: "Đăng nhập Google thất bại." }
       busy = false
     }
     Unit
   }
   val status = when {
-    !state.enabled -> "Off"
-    syncing -> "Syncing…"
-    state.error != null -> "Needs attention"
-    state.lastSync != null -> "Synced · ${fmtDate(state.lastSync)}"
-    else -> "Not synced yet"
+    !state.enabled -> "Tắt"
+    syncing -> "Đang đồng bộ…"
+    state.error != null -> "Cần chú ý"
+    state.lastSync != null -> "Đã đồng bộ · ${fmtDate(state.lastSync)}"
+    else -> "Chưa đồng bộ"
   }
   Group {
     ListRow(
-      "Sync PDFs with Google Drive", first = true, lead = { Lead(I.googleDrive) },
-      subtitle = if (state.enabled) state.email ?: "Signed in" else "Keeps your PDFs and folders the same on this phone and in your Drive",
+      "Đồng bộ PDF với Google Drive", first = true, lead = { Lead(I.googleDrive) },
+      subtitle = if (state.enabled) state.email ?: "Đã đăng nhập" else "Giữ PDF và thư mục giống nhau trên điện thoại và trên Drive của bạn",
     ) {
       if (busy) Spinner(c.accent) else Toggle(state.enabled) { on -> if (on) connect() else confirmOff = true }
     }
     if (state.enabled) {
-      ListRow("Status", lead = { Lead(I.cloudSyncOutline) }, value = status)
-      ListRow("Sync now", lead = { Lead(I.sync) }, onClick = if (syncing) null else ({ Backup.syncNow(); Unit }))
-      ListRow("Change account", lead = { Lead(I.accountSwitchOutline) }, subtitle = "Sync with a different Google account", onClick = if (busy) null else connect)
+      ListRow("Trạng thái", lead = { Lead(I.cloudSyncOutline) }, value = status)
+      ListRow("Đồng bộ ngay", lead = { Lead(I.sync) }, onClick = if (syncing) null else ({ Backup.syncNow(); Unit }))
+      ListRow("Đổi tài khoản", lead = { Lead(I.accountSwitchOutline) }, subtitle = "Đồng bộ với tài khoản Google khác", onClick = if (busy) null else connect)
     }
   }
   // The last run's problem is hidden while a new run is trying again.
@@ -181,14 +181,14 @@ private fun DriveBackup() {
   if (problem.isNotEmpty()) T(problem, Type.small, c.accent, Modifier.padding(top = 8.dp))
   if (state.enabled) {
     T(
-      "Syncs both ways whenever you save, rename, move or delete a file, and when you open Files. Deleted files go to Drive's Trash for 30 days. Only files made by PDF Tools are visible to the app in your Drive.",
+      "Đồng bộ hai chiều mỗi khi bạn lưu, đổi tên, chuyển hoặc xóa tệp, và khi bạn mở Tệp. Tệp đã xóa vào Thùng rác của Drive trong 30 ngày. Ứng dụng chỉ thấy các tệp do PDF Tools tạo trên Drive của bạn.",
       Type.small, c.sub, Modifier.padding(top = 8.dp),
     )
   }
   if (confirmOff) {
     ConfirmDialog(
-      "Turn off Drive sync?", "PDF Tools signs out of Google Drive. Your files stay on this phone and in your Drive, but stop syncing.",
-      "Turn off", onDismiss = { confirmOff = false },
+      "Tắt đồng bộ Drive?", "PDF Tools sẽ đăng xuất khỏi Google Drive. Tệp của bạn vẫn ở trên điện thoại và trên Drive, nhưng ngừng đồng bộ.",
+      "Tắt", onDismiss = { confirmOff = false },
     ) { scope.launch { busy = true; Backup.disable(); busy = false } }
   }
 }
@@ -196,7 +196,7 @@ private fun DriveBackup() {
 @Composable
 private fun ThemePicker() {
   Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-    listOf(ThemePref.System to "System", ThemePref.Light to "Light", ThemePref.Dark to "Dark").forEach { (p, label) ->
+    listOf(ThemePref.System to "Hệ thống", ThemePref.Light to "Sáng", ThemePref.Dark to "Tối").forEach { (p, label) ->
       val on = ThemeState.pref == p
       val border by animateColorAsState(if (on) c.accent else c.lineStrong, tween(220), label = "theme")
       val width by animateDpAsState(if (on) 2.5.dp else 1.dp, tween(220), label = "themeW")

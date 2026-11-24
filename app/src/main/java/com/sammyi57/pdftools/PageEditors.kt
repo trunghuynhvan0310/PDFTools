@@ -86,7 +86,7 @@ private class Pages(val path: String) {
 private fun rememberPages(file: Picked, onError: (String) -> Unit): Pages {
   val s = remember(file.path) { Pages(file.path) }
   LaunchedEffect(file.path) {
-    try { s.count = withContext(Dispatchers.IO) { pageSizes(file.path).size } } catch (_: Exception) { onError("Could not read this PDF.") }
+    try { s.count = withContext(Dispatchers.IO) { pageSizes(file.path).size } } catch (_: Exception) { onError("Không đọc được PDF này.") }
     // Same size as Organize's, so each tool reuses the other's cached renders.
     s.thumbs = withContext(Dispatchers.IO) { runCatching { renderThumbs(file.path, 200) }.getOrNull() }
   }
@@ -130,20 +130,20 @@ private fun PageStage(pages: Pages, clip: Boolean = true, overlay: @Composable B
 private fun PageBar(pages: Pages, trailing: @Composable RowScope.() -> Unit = {}) {
   var goTo by remember { mutableStateOf(false) }
   Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-    IconBtn(I.chevronLeft, color = if (pages.index > 0) c.ink else c.faint, label = "Previous page") { pages.go(pages.index - 1) }
+    IconBtn(I.chevronLeft, color = if (pages.index > 0) c.ink else c.faint, label = "Trang trước") { pages.go(pages.index - 1) }
     Row(
       Modifier.tap(pressed = c.sunken, shape = RoundedCornerShape(8.dp), enabled = pages.count > 1) { goTo = true }.padding(start = 6.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      T("Page ${pages.index + 1}${if (pages.count > 0) " of ${pages.count}" else ""}", Type.med.copy(fontSize = 14.sp))
+      T("Trang ${pages.index + 1}${if (pages.count > 0) "/${pages.count}" else ""}", Type.med.copy(fontSize = 14.sp))
       if (pages.count > 1) Icon(I.menuDown, 18.dp, c.sub)
     }
-    IconBtn(I.chevronRight, color = if (pages.index < pages.count - 1) c.ink else c.faint, label = "Next page") { pages.go(pages.index + 1) }
+    IconBtn(I.chevronRight, color = if (pages.index < pages.count - 1) c.ink else c.faint, label = "Trang sau") { pages.go(pages.index + 1) }
     Spacer(Modifier.weight(1f))
     trailing()
   }
   if (goTo) {
-    PromptDialog("Go to page", "${pages.index + 1}", "1 to ${pages.count}", "Page number", "Go", keyboard = KeyboardType.Number, onClose = { goTo = false }) {
+    PromptDialog("Đi tới trang", "${pages.index + 1}", "1 đến ${pages.count}", "Số trang", "Đi", keyboard = KeyboardType.Number, onClose = { goTo = false }) {
       it.toIntOrNull()?.let { n -> pages.go(n - 1) }
     }
   }
@@ -159,7 +159,7 @@ private fun PageStrip(pages: Pages, marked: (Int) -> Boolean) {
     items(pages.count) { i ->
       val on = i == pages.index
       val thumb = rememberBitmap(pages.thumbs?.getOrNull(i)?.path, 200)
-      Column(Modifier.width(52.dp).tap(scaleTo = 0.92f, label = "Page ${i + 1}") { pages.go(i) }, horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(Modifier.width(52.dp).tap(scaleTo = 0.92f, label = "Trang ${i + 1}") { pages.go(i) }, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
           Modifier.size(52.dp, 70.dp).clip(RoundedCornerShape(6.dp)).background(c.page)
             .border(if (on) 2.dp else 1.dp, if (on) c.accent else c.lineStrong, RoundedCornerShape(6.dp)),
@@ -190,7 +190,7 @@ private const val TAP = 0.012f // a drag smaller than this (fraction of the page
 
 @Composable
 fun RedactEditor(p: EditorProps) {
-  val file = p.file ?: return T("Choose a PDF, then drag across anything you want blacked out.", Type.small, c.sub)
+  val file = p.file ?: return T("Chọn một PDF, rồi kéo qua vùng bạn muốn che đen.", Type.small, c.sub)
   ResetOnNewFile(file, "boxes", p)
   val pages = rememberPages(file, p.onError)
   val boxes = p.value.get<Map<String, List<List<Float>>>>("boxes") ?: emptyMap()
@@ -245,14 +245,14 @@ fun RedactEditor(p: EditorProps) {
   }
   PageBar(pages) {
     if (onPage.isNotEmpty()) {
-      T("Undo", Type.med, c.accent, Modifier.tap(scaleTo = 0.9f) { edit(pages.index) { it.dropLast(1) } })
-      T("Clear page", Type.med, c.accent, Modifier.padding(start = 16.dp).tap(scaleTo = 0.9f) { edit(pages.index) { emptyList() } })
+      T("Hoàn tác", Type.med, c.accent, Modifier.tap(scaleTo = 0.9f) { edit(pages.index) { it.dropLast(1) } })
+      T("Xóa trang", Type.med, c.accent, Modifier.padding(start = 16.dp).tap(scaleTo = 0.9f) { edit(pages.index) { emptyList() } })
     }
   }
   PageStrip(pages) { !boxes[it.toString()].isNullOrEmpty() }
   T(
-    (if (total > 0) "${plural(total, "area")} on ${plural(boxes.size, "page")} will be blacked out. Tap a box to remove it. " else "Drag across anything you want blacked out. ") +
-      "Pages you mark become images, so nothing under a box can be copied, searched or uncovered.",
+    (if (total > 0) "${plural(total, "area")} trên ${plural(boxes.size, "page")} sẽ bị che đen. Chạm vào một ô để bỏ. " else "Kéo qua vùng bạn muốn che đen. ") +
+      "Các trang bạn đánh dấu sẽ thành ảnh, nên không thể sao chép, tìm kiếm hay hiện lại nội dung dưới ô che.",
     Type.small, c.sub,
   )
 }
@@ -271,9 +271,9 @@ private val CORNERS = listOf(0 to 0, 1 to 0, 1 to 1, 0 to 1)
 fun PdfCropEditor(p: EditorProps) {
   val scope = rememberCoroutineScope()
   Options(CROP_OPTS, p.value) { v -> p.onChange { v } }
-  val file = p.file ?: return T("Choose a PDF, then pull the corners in to keep just part of the page.", Type.small, c.sub)
+  val file = p.file ?: return T("Chọn một PDF, rồi kéo các góc vào để giữ lại một phần trang.", Type.small, c.sub)
   if (p.value.str("mode") == "resize") {
-    T("Every page is scaled to fit the size above, keeping its shape. Nothing is cut off.", Type.small, c.sub)
+    T("Mỗi trang được co giãn vừa khổ ở trên, giữ nguyên tỷ lệ. Không có gì bị cắt.", Type.small, c.sub)
     return
   }
   ResetOnNewFile(file, "boxes", p)
@@ -301,18 +301,18 @@ fun PdfCropEditor(p: EditorProps) {
       val found = HashMap<String, List<Float>>()
       try {
         list.forEachIndexed { n, i ->
-          auto = all to (if (all) "${n + 1} of ${list.size}…" else "Cropping…")
+          auto = all to (if (all) "${n + 1}/${list.size}…" else "Đang cắt…")
           autoCropPage(withContext(Dispatchers.IO) { renderPage(file.path, i, 1000) }.path)?.let { found[i.toString()] = it }
         }
         if (found.isNotEmpty()) p.onChange { v -> v.put("boxes", (v.get<Map<String, List<Float>>>("boxes") ?: emptyMap()) + found) }
         note = when {
-          found.isNotEmpty() && all -> "Auto crop trimmed ${plural(found.size, "page")} of ${list.size}. Drag any corner to adjust."
-          found.isNotEmpty() -> "Trimmed. Drag any corner to adjust."
-          all -> "Nothing to trim: every page already runs to its edges."
-          else -> "Nothing to trim: this page already runs to its edges."
+          found.isNotEmpty() && all -> "Tự động cắt đã xén ${plural(found.size, "page")}/${list.size}. Kéo bất kỳ góc nào để chỉnh."
+          found.isNotEmpty() -> "Đã xén. Kéo bất kỳ góc nào để chỉnh."
+          all -> "Không có gì để xén: mọi trang đã sát mép."
+          else -> "Không có gì để xén: trang này đã sát mép."
         }
       } catch (_: Exception) {
-        p.onError("Auto crop could not read this PDF.")
+        p.onError("Tự động cắt không đọc được PDF này.")
       }
       auto = null
     }
@@ -367,22 +367,22 @@ fun PdfCropEditor(p: EditorProps) {
   }
   PageBar(pages) {
     if (stored != null) {
-      if (pages.count > 1) T("Apply to all", Type.med, c.accent, Modifier.tap(scaleTo = 0.9f) {
+      if (pages.count > 1) T("Áp dụng cho tất cả", Type.med, c.accent, Modifier.tap(scaleTo = 0.9f) {
         p.onChange { v -> v.put("boxes", (0 until pages.count).associate { it.toString() to stored }) }
       })
-      T("Reset page", Type.med, c.accent, Modifier.padding(start = 16.dp).tap(scaleTo = 0.9f) { setBox(pages.index, null) })
+      T("Đặt lại trang", Type.med, c.accent, Modifier.padding(start = 16.dp).tap(scaleTo = 0.9f) { setBox(pages.index, null) })
     }
   }
   // Both buttons stay put while one runs (the other just stops taking taps), so nothing jumps.
   Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-    Btn(auto?.takeIf { !it.first }?.second ?: "Auto crop", Modifier.weight(1f), I.autoFix, BtnKind.Secondary, busy = auto?.first == false, height = 46.dp) { autoCrop(false) }
-    if (pages.count > 1) Btn(auto?.takeIf { it.first }?.second ?: "Auto crop all", Modifier.weight(1f), I.autoFix, BtnKind.Secondary, busy = auto?.first == true, height = 46.dp) { autoCrop(true) }
+    Btn(auto?.takeIf { !it.first }?.second ?: "Tự động cắt", Modifier.weight(1f), I.autoFix, BtnKind.Secondary, busy = auto?.first == false, height = 46.dp) { autoCrop(false) }
+    if (pages.count > 1) Btn(auto?.takeIf { it.first }?.second ?: "Tự động cắt tất cả", Modifier.weight(1f), I.autoFix, BtnKind.Secondary, busy = auto?.first == true, height = 46.dp) { autoCrop(true) }
   }
   PageStrip(pages) { boxes.containsKey(it.toString()) }
   T(
     note.ifEmpty {
-      if (boxes.isNotEmpty()) "${plural(boxes.size, "page")} cropped. Every page has its own frame — leave one alone to keep it whole."
-      else "Pull the corners in, or tap Auto crop to trim the margins. Every page has its own frame."
+      if (boxes.isNotEmpty()) "Đã cắt ${plural(boxes.size, "page")}. Mỗi trang có khung riêng — để nguyên một trang nếu muốn giữ đầy đủ."
+      else "Kéo các góc vào, hoặc chạm Tự động cắt để xén lề. Mỗi trang có khung riêng."
     },
     Type.small, c.sub,
   )
@@ -393,7 +393,7 @@ fun PdfCropEditor(p: EditorProps) {
 private const val TEXT_SIZE = 0.028f // a new line's height, as a fraction of the page
 private const val IMG_W = 0.34f // a new picture's width, as a fraction of the page
 // Pen colours, the usual ones for filling forms in; ink first.
-private val PEN = listOf(INK to "Black", "#1D4ED8" to "Blue", "#DC2626" to "Red", "#15803D" to "Green", "#6B7280" to "Grey")
+private val PEN = listOf(INK to "Đen", "#1D4ED8" to "Xanh dương", "#DC2626" to "Đỏ", "#15803D" to "Xanh lá", "#6B7280" to "Xám")
 private val OPACITY = listOf(1f, 0.75f, 0.5f, 0.25f)
 
 private fun hexColor(hex: String) = Color(android.graphics.Color.parseColor(if (hex.startsWith("#")) hex else "#$hex"))
@@ -401,7 +401,7 @@ private fun hexColor(hex: String) = Color(android.graphics.Color.parseColor(if (
 @Composable
 fun FillSignEditor(p: EditorProps) {
   val scope = rememberCoroutineScope()
-  val file = p.file ?: return T("Choose a PDF, then type on it and drop your signature where it belongs.", Type.small, c.sub)
+  val file = p.file ?: return T("Chọn một PDF, rồi gõ chữ lên đó và đặt chữ ký đúng chỗ.", Type.small, c.sub)
   ResetOnNewFile(file, "items", p)
   val pages = rememberPages(file, p.onError)
   val items = p.value.get<List<SignItem>>("items") ?: emptyList()
@@ -473,17 +473,17 @@ fun FillSignEditor(p: EditorProps) {
   val selected = items.getOrNull(sel)
   PageBar(pages) {
     if (selected != null) {
-      if (selected.kind == "text") IconBtn(I.pencilOutline, label = "Edit text") { typing = sel }
-      IconBtn(I.formatFontSizeDecrease, label = "Smaller") { scale(sel, 1 / 1.18f) }
-      IconBtn(I.formatFontSizeIncrease, label = "Bigger") { scale(sel, 1.18f) }
-      IconBtn(I.deleteOutline, color = c.accent, label = "Remove") { val i = sel; sel = -1; set { l -> l.filterIndexed { j, _ -> j != i } } }
+      if (selected.kind == "text") IconBtn(I.pencilOutline, label = "Sửa chữ") { typing = sel }
+      IconBtn(I.formatFontSizeDecrease, label = "Nhỏ hơn") { scale(sel, 1 / 1.18f) }
+      IconBtn(I.formatFontSizeIncrease, label = "Lớn hơn") { scale(sel, 1.18f) }
+      IconBtn(I.deleteOutline, color = c.accent, label = "Xóa") { val i = sel; sel = -1; set { l -> l.filterIndexed { j, _ -> j != i } } }
     }
   }
 
   if (selected != null) {
     val shape = RoundedCornerShape(Radius.group)
     Column(Modifier.padding(top = 8.dp).fillMaxWidth().background(c.surface, shape).border(0.6.dp, c.lineStrong, shape).padding(horizontal = 12.dp, vertical = 4.dp)) {
-      if (selected.kind == "text") PanelRow("Colour") {
+      if (selected.kind == "text") PanelRow("Màu") {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
           PEN.forEach { (hex, name) ->
             val on = (selected.color ?: INK) == hex
@@ -495,14 +495,14 @@ fun FillSignEditor(p: EditorProps) {
           }
         }
       }
-      PanelRow("Opacity") {
+      PanelRow("Độ đậm") {
         Segmented(OPACITY.map { it to "${(it * 100).roundToInt()}%" }, OPACITY.minBy { abs(it - selected.opacity) }) { v -> edit(sel) { it.copy(opacity = v) } }
       }
-      PanelRow("Rotate") {
+      PanelRow("Xoay") {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          IconBtn(I.rotateLeft, label = "Turn left") { turn(-15f) }
-          T("${selected.angle.roundToInt()}°", Type.num.copy(fontSize = 14.sp), modifier = Modifier.width(48.dp).tap(scaleTo = 0.9f, label = "Straighten") { edit(sel) { it.copy(angle = 0f) } }, align = androidx.compose.ui.text.style.TextAlign.Center)
-          IconBtn(I.rotateRight, label = "Turn right") { turn(15f) }
+          IconBtn(I.rotateLeft, label = "Xoay trái") { turn(-15f) }
+          T("${selected.angle.roundToInt()}°", Type.num.copy(fontSize = 14.sp), modifier = Modifier.width(48.dp).tap(scaleTo = 0.9f, label = "Chỉnh thẳng") { edit(sel) { it.copy(angle = 0f) } }, align = androidx.compose.ui.text.style.TextAlign.Center)
+          IconBtn(I.rotateRight, label = "Xoay phải") { turn(15f) }
           Spacer(Modifier.weight(1f))
           T("+90°", Type.med.copy(fontSize = 13.sp), modifier = Modifier.tap(pressed = c.sunken, shape = CircleShape, scaleTo = 0.92f) { turn(90f) }.border(1.dp, c.lineStrong, CircleShape).padding(horizontal = 12.dp, vertical = 7.dp))
         }
@@ -524,12 +524,12 @@ fun FillSignEditor(p: EditorProps) {
   }
   var signing by remember { mutableStateOf(false) }
   Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    Btn("Text", Modifier.weight(1f), I.formatText, BtnKind.Secondary, height = 46.dp) { typing = -1 }
-    Btn("Signature", Modifier.weight(1.3f), I.drawPen, BtnKind.Secondary, height = 46.dp) { signing = true }
-    Btn("Picture", Modifier.weight(1f), I.imageOutline, BtnKind.Secondary, height = 46.dp) {
+    Btn("Chữ", Modifier.weight(1f), I.formatText, BtnKind.Secondary, height = 46.dp) { typing = -1 }
+    Btn("Chữ ký", Modifier.weight(1.3f), I.drawPen, BtnKind.Secondary, height = 46.dp) { signing = true }
+    Btn("Ảnh", Modifier.weight(1f), I.imageOutline, BtnKind.Secondary, height = 46.dp) {
       scope.launch {
         val pic = pickImages(false).firstOrNull() ?: return@launch
-        if (mimeOfPicked(pic.path) == null) return@launch p.onError("Pick a JPEG or PNG picture. HEIC, WebP and other formats can’t go into a PDF here.")
+        if (mimeOfPicked(pic.path) == null) return@launch p.onError("Hãy chọn ảnh JPEG hoặc PNG. HEIC, WebP và các định dạng khác không thể đưa vào PDF ở đây.")
         addPicture(pic.path)
       }
     }
@@ -537,20 +537,20 @@ fun FillSignEditor(p: EditorProps) {
   if (signing) SignaturePad({ signing = false }) { f -> signing = false; addPicture(f.path) }
   PageStrip(pages) { i -> items.any { it.page == i } }
   T(
-    if (items.isNotEmpty()) "${plural(items.size, "item")} added. Drag anything to move it; tap it to resize, recolour, fade or turn it."
-    else "Add a line of text or a picture of your signature, then drag it where it belongs.",
+    if (items.isNotEmpty()) "Đã thêm ${plural(items.size, "item")}. Kéo để di chuyển; chạm để đổi cỡ, đổi màu, làm mờ hoặc xoay."
+    else "Thêm một dòng chữ hoặc ảnh chữ ký, rồi kéo đến đúng chỗ.",
     Type.small, c.sub, Modifier.padding(top = 10.dp),
   )
 
   typing?.let { t ->
     PromptDialog(
-      if (t == -1) "Add text" else "Edit text", if (t >= 0) items.getOrNull(t)?.text ?: "" else "", placeholder = "Type what goes on the page",
-      submitLabel = if (t == -1) "Add" else "Save", onClose = { typing = null },
+      if (t == -1) "Thêm chữ" else "Sửa chữ", if (t >= 0) items.getOrNull(t)?.text ?: "" else "", placeholder = "Nhập nội dung cần đặt lên trang",
+      submitLabel = if (t == -1) "Thêm" else "Lưu", onClose = { typing = null },
     ) { typed ->
       // The page gets Helvetica, which only writes Latin text: store what it can write, and say what it can't.
       val text = winAnsi(typed).trim()
-      if (text.isEmpty()) return@PromptDialog p.onError("Text on the page can only use Latin letters, numbers and common symbols.")
-      if (Regex("[^\\x20-\\x7E\\xA0-\\xFF‘’“”–—₹]").containsMatchIn(typed)) p.onError("Some characters can’t be written on a PDF page and were left out.")
+      if (text.isEmpty()) return@PromptDialog p.onError("Chữ trên trang chỉ dùng được chữ cái Latin không dấu, số và ký hiệu thông dụng.")
+      if (Regex("[^\\x20-\\x7E\\xA0-\\xFF‘’“”–—₹]").containsMatchIn(typed)) p.onError("Một số ký tự không thể ghi lên trang PDF nên đã bị bỏ qua.")
       if (t == -1) add(SignItem(pages.index, "text", 0.1f, 0.1f, size = TEXT_SIZE, text = text)) else edit(t) { it.copy(text = text) }
     }
   }
@@ -576,11 +576,11 @@ private fun SignaturePad(onClose: () -> Unit, onUse: (File) -> Unit) {
   var live by remember { mutableStateOf<List<Offset>>(emptyList()) }
   val pen = with(LocalDensity.current) { 3.dp.toPx() }
   val shape = RoundedCornerShape(Radius.group)
-  AppDialog(onClose, "Your signature", if (drawing) "Sign with your finger. It's saved on this phone for next time." else "Saved on this phone.") {
+  AppDialog(onClose, "Chữ ký của bạn", if (drawing) "Ký bằng ngón tay. Chữ ký được lưu trên điện thoại cho lần sau." else "Đã lưu trên điện thoại.") {
     Box(Modifier.padding(top = 14.dp).fillMaxWidth().height(170.dp).clip(shape).background(Color.White).border(1.dp, c.lineStrong, shape)) {
       if (drawing) {
         if (strokes.isEmpty() && live.isEmpty()) {
-          T("Sign here", Type.title, Color(0xFFB8B4B0), Modifier.align(Alignment.Center))
+          T("Ký tại đây", Type.title, Color(0xFFB8B4B0), Modifier.align(Alignment.Center))
         }
         androidx.compose.foundation.Canvas(
           Modifier.fillMaxSize().pointerInput(Unit) {
@@ -599,16 +599,16 @@ private fun SignaturePad(onClose: () -> Unit, onUse: (File) -> Unit) {
         }
       } else {
         val bmp = rememberBitmap(saved?.path, 900)
-        if (bmp != null) Image(bmp, "Your saved signature", Modifier.fillMaxSize().padding(16.dp), contentScale = ContentScale.Fit)
+        if (bmp != null) Image(bmp, "Chữ ký đã lưu của bạn", Modifier.fillMaxSize().padding(16.dp), contentScale = ContentScale.Fit)
       }
     }
     Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       if (drawing) {
-        Btn("Clear", Modifier.weight(1f), kind = BtnKind.Secondary, enabled = strokes.isNotEmpty()) { strokes.clear() }
-        Btn("Save & use", Modifier.weight(1f), kind = BtnKind.Accent, enabled = strokes.isNotEmpty()) { onUse(saveSignature(strokes.toList(), pen)) }
+        Btn("Xóa", Modifier.weight(1f), kind = BtnKind.Secondary, enabled = strokes.isNotEmpty()) { strokes.clear() }
+        Btn("Lưu & dùng", Modifier.weight(1f), kind = BtnKind.Accent, enabled = strokes.isNotEmpty()) { onUse(saveSignature(strokes.toList(), pen)) }
       } else {
-        Btn("Draw new", Modifier.weight(1f), kind = BtnKind.Secondary) { drawing = true }
-        Btn("Use it", Modifier.weight(1f), kind = BtnKind.Accent) { saved?.let(onUse) }
+        Btn("Vẽ mới", Modifier.weight(1f), kind = BtnKind.Secondary) { drawing = true }
+        Btn("Dùng chữ ký này", Modifier.weight(1f), kind = BtnKind.Accent) { saved?.let(onUse) }
       }
     }
   }

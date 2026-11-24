@@ -25,7 +25,7 @@
   <!-- Predictive back is off: on some phones (Vivo Funtouch OS 14) the system commits back while the finger is still
        down during the in-app animation. Off, back fires on release like any app. -->
   <application
-    android:allowBackup="true"
+    android:allowBackup="false"
     android:icon="@mipmap/ic_launcher"
     android:roundIcon="@mipmap/ic_launcher_round"
     android:label="@string/app_name"

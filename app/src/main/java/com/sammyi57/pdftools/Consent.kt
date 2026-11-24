@@ -48,58 +48,58 @@ import kotlinx.coroutines.delay
 private const val CONTACT = "bhingesamarth@gmail.com"
 
 private val POINTS = listOf(
-  I.cellphoneLock to "Every tool runs on this phone",
-  I.accountOffOutline to "No account, no tracking, no ads",
-  I.googleDrive to "Google Drive backup is optional",
-  I.wifiOff to "Works with no connection",
+  I.cellphoneLock to "Mọi công cụ chạy ngay trên điện thoại",
+  I.accountOffOutline to "Không tài khoản, không theo dõi, không quảng cáo",
+  I.googleDrive to "Sao lưu Google Drive là tùy chọn",
+  I.wifiOff to "Hoạt động không cần mạng",
 )
 
-private val PRIVACY = """1. What we collect
-Nothing. PDF Tools has no accounts, no analytics, no advertising and no crash reporting. We do not collect, receive or store your documents, your name, your email address or any identifier.
+private val PRIVACY = """1. Chúng tôi thu thập gì
+Không gì cả. PDF Tools không có tài khoản, không phân tích, không quảng cáo và không báo cáo lỗi. Chúng tôi không thu thập, nhận hay lưu tài liệu, tên, địa chỉ email hoặc bất kỳ mã định danh nào của bạn.
 
-2. Where your files live
-Every tool runs entirely on this device. Saved PDFs are kept in the app's own private storage, which other apps cannot read. They are never sent to us, because there is nowhere to send them to.
+2. Tệp của bạn nằm ở đâu
+Mọi công cụ chạy hoàn toàn trên thiết bị này. PDF đã lưu được giữ trong bộ nhớ riêng của ứng dụng, các ứng dụng khác không đọc được. Chúng không bao giờ được gửi cho chúng tôi, vì không có nơi nào để gửi.
 
-3. Google Drive backup
-Off unless you turn it on. When you do, the app signs in to the Google account you choose and copies your saved PDFs to your own Google Drive. Those files travel from this phone to Google directly. You can disconnect at any time in Settings, which revokes the app's access to your account. What Google does with files in your Drive is covered by Google's own privacy policy.
+3. Sao lưu Google Drive
+Tắt trừ khi bạn bật. Khi bật, ứng dụng đăng nhập vào tài khoản Google bạn chọn và sao chép PDF đã lưu lên Google Drive của chính bạn. Các tệp đó đi thẳng từ điện thoại này tới Google. Bạn có thể ngắt kết nối bất cứ lúc nào trong Cài đặt, việc này thu hồi quyền truy cập của ứng dụng vào tài khoản của bạn. Cách Google xử lý tệp trong Drive của bạn tuân theo chính sách quyền riêng tư của Google.
 
-4. Permissions
-Camera is used only while you are scanning a document. Photos is used only when you pick an image to turn into a PDF or to place a signature. Neither is used in the background, and the app asks the first time it needs each one.
+4. Quyền truy cập
+Camera chỉ được dùng khi bạn đang quét tài liệu. Ảnh chỉ được dùng khi bạn chọn một ảnh để chuyển thành PDF hoặc để đặt chữ ký. Cả hai đều không chạy nền, và ứng dụng hỏi lần đầu khi cần từng quyền.
 
-5. Reading text from scans
-Making a scanned PDF searchable uses a text recognition model built into the app. The page images and the text read from them never leave the device, and it needs no connection.
+5. Đọc chữ từ bản quét
+Việc làm cho PDF quét có thể tìm kiếm dùng một mô hình nhận dạng chữ tích hợp trong ứng dụng. Ảnh trang và chữ đọc được không bao giờ rời khỏi thiết bị, và không cần kết nối mạng.
 
-6. Children
-The app is not directed at children under 13, and collects no data from anyone of any age.
+6. Trẻ em
+Ứng dụng không hướng tới trẻ em dưới 13 tuổi, và không thu thập dữ liệu của bất kỳ ai ở mọi độ tuổi.
 
-7. Changes
-If this policy changes in a way that matters, the app will show it to you again before you carry on.
+7. Thay đổi
+Nếu chính sách này thay đổi theo hướng quan trọng, ứng dụng sẽ hiển thị lại cho bạn trước khi bạn tiếp tục.
 
-8. Contact
-Questions about this policy: $CONTACT"""
+8. Liên hệ
+Câu hỏi về chính sách này: $CONTACT"""
 
-private val TERMS = """1. The app
-PDF Tools is provided free of charge, as is, for use on your own device.
+private val TERMS = """1. Ứng dụng
+PDF Tools được cung cấp miễn phí, nguyên trạng, để dùng trên thiết bị của chính bạn.
 
-2. Your files are your responsibility
-The app changes documents you choose, and some changes cannot be undone: redaction removes content for good, a password locks a file, cropping discards part of a page. Keep your own copy of anything you cannot afford to lose. We have no copy and cannot recover one for you.
+2. Tệp của bạn do bạn chịu trách nhiệm
+Ứng dụng thay đổi các tài liệu bạn chọn, và một số thay đổi không thể hoàn tác: che thông tin xóa nội dung vĩnh viễn, mật khẩu khóa tệp, cắt xén bỏ một phần trang. Hãy giữ bản sao riêng của bất cứ thứ gì bạn không thể để mất. Chúng tôi không có bản sao và không thể khôi phục giúp bạn.
 
-3. Acceptable use
-Do not use the app to alter documents in order to deceive anyone, to forge a signature, or for anything unlawful where you live. Placing a signature image on a document is not a statement about that document's legal standing — whether a signed PDF binds anyone depends on your local law and on the parties involved.
+3. Sử dụng chấp nhận được
+Không dùng ứng dụng để sửa tài liệu nhằm lừa dối bất kỳ ai, giả mạo chữ ký, hoặc cho bất kỳ việc gì trái pháp luật nơi bạn sống. Việc đặt ảnh chữ ký lên tài liệu không phải là tuyên bố về giá trị pháp lý của tài liệu đó — một PDF đã ký có ràng buộc ai hay không phụ thuộc vào luật địa phương và các bên liên quan.
 
-4. No warranty
-The app comes with no warranty of any kind. Page detection, text recognition and compression are approximate by their nature, and any tool may contain errors. Check the result before you rely on it.
+4. Không bảo hành
+Ứng dụng không kèm bất kỳ bảo hành nào. Việc phát hiện trang, nhận dạng chữ và nén vốn chỉ mang tính tương đối, và công cụ nào cũng có thể có lỗi. Hãy kiểm tra kết quả trước khi dựa vào nó.
 
-5. Limitation of liability
-So far as the law allows, we are not liable for lost data, lost profits, or any indirect or consequential loss arising from your use of the app.
+5. Giới hạn trách nhiệm
+Trong phạm vi pháp luật cho phép, chúng tôi không chịu trách nhiệm về dữ liệu bị mất, lợi nhuận bị mất, hay bất kỳ tổn thất gián tiếp hoặc hệ quả nào phát sinh từ việc bạn dùng ứng dụng.
 
-6. Third-party services
-Google Drive backup is optional and is governed by Google's own terms of service.
+6. Dịch vụ bên thứ ba
+Sao lưu Google Drive là tùy chọn và tuân theo điều khoản dịch vụ riêng của Google.
 
-7. Changes
-If these terms change, the app will ask you to accept them again. Continuing to use it means you accept the version shown."""
+7. Thay đổi
+Nếu các điều khoản này thay đổi, ứng dụng sẽ yêu cầu bạn chấp nhận lại. Tiếp tục sử dụng nghĩa là bạn chấp nhận phiên bản được hiển thị."""
 
-private val DOCS = mapOf("privacy" to ("Privacy Policy" to PRIVACY), "terms" to ("Terms & Conditions" to TERMS))
+private val DOCS = mapOf("privacy" to ("Chính sách quyền riêng tư" to PRIVACY), "terms" to ("Điều khoản & Điều kiện" to TERMS))
 
 /** First launch: a short tour, then the terms. Reading the terms again from Settings goes straight to them. */
 @Composable
@@ -119,7 +119,7 @@ private fun ConsentBody(onAccept: (() -> Unit)?, onClose: (() -> Unit)?) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
       if (onClose != null) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.End) {
-          IconBtn(I.close, 24.dp, label = "Close", onClick = onClose)
+          IconBtn(I.close, 24.dp, label = "Đóng", onClick = onClose)
         }
       }
       Column(
@@ -134,7 +134,7 @@ private fun ConsentBody(onAccept: (() -> Unit)?, onClose: (() -> Unit)?) {
           contentAlignment = Alignment.Center,
         ) { Icon(I.filePdfBox, 46.dp, Color.White) }
         T("PDF Tools", Type.largeTitle, modifier = Modifier.padding(top = 18.dp))
-        T("Your documents never leave this phone.", Type.body, c.sub, Modifier.padding(top = 4.dp), align = TextAlign.Center)
+        T("Tài liệu của bạn không bao giờ rời khỏi điện thoại này.", Type.body, c.sub, Modifier.padding(top = 4.dp), align = TextAlign.Center)
         Column(Modifier.fillMaxWidth().padding(top = 30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
           POINTS.forEachIndexed { i, (glyph, label) -> Stagger(i) { Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(34.dp).background(c.sunken, RoundedCornerShape(Radius.tile)), contentAlignment = Alignment.Center) { Icon(glyph, 18.dp, c.sub) }
@@ -145,14 +145,14 @@ private fun ConsentBody(onAccept: (() -> Unit)?, onClose: (() -> Unit)?) {
       }
       Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 8.dp)) {
         if (onAccept != null) {
-          Tick(privacy, "I have read the", "Privacy Policy", { privacy = !privacy }) { doc = "privacy" }
-          Tick(terms, "I agree to the", "Terms & Conditions", { terms = !terms }) { doc = "terms" }
-          Btn("Continue", Modifier.fillMaxWidth().padding(top = 14.dp), enabled = privacy && terms, onClick = onAccept)
+          Tick(privacy, "Tôi đã đọc", "Chính sách quyền riêng tư", { privacy = !privacy }) { doc = "privacy" }
+          Tick(terms, "Tôi đồng ý với", "Điều khoản & Điều kiện", { terms = !terms }) { doc = "terms" }
+          Btn("Tiếp tục", Modifier.fillMaxWidth().padding(top = 14.dp), enabled = privacy && terms, onClick = onAccept)
         } else {
-          T("Privacy Policy", Type.item, c.accent, Modifier.tap { doc = "privacy" }.padding(vertical = 11.dp))
-          T("Terms & Conditions", Type.item, c.accent, Modifier.tap { doc = "terms" }.padding(vertical = 11.dp))
+          T("Chính sách quyền riêng tư", Type.item, c.accent, Modifier.tap { doc = "privacy" }.padding(vertical = 11.dp))
+          T("Điều khoản & Điều kiện", Type.item, c.accent, Modifier.tap { doc = "terms" }.padding(vertical = 11.dp))
         }
-        T("Last updated ${Terms.UPDATED}", Type.small, c.faint, Modifier.fillMaxWidth().padding(top = 14.dp), align = TextAlign.Center)
+        T("Cập nhật lần cuối: ${Terms.UPDATED}", Type.small, c.faint, Modifier.fillMaxWidth().padding(top = 14.dp), align = TextAlign.Center)
       }
     }
 
@@ -164,7 +164,7 @@ private fun ConsentBody(onAccept: (() -> Unit)?, onClose: (() -> Unit)?) {
       Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(start = 20.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
           T(title, Type.title.copy(fontSize = Type.title.fontSize * 0.75f), modifier = Modifier.weight(1f))
-          IconBtn(I.close, 24.dp, label = "Close") { doc = null }
+          IconBtn(I.close, 24.dp, label = "Đóng") { doc = null }
         }
         T(body, Type.small.copy(fontSize = Type.small.fontSize * 1.07f, lineHeight = Type.small.lineHeight * 1.15f), c.sub,
           Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 40.dp))

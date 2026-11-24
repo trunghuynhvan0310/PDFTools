@@ -67,8 +67,8 @@ import kotlin.math.min
 class EditorProps(val file: Picked?, val value: Opts, val onChange: ((Opts) -> Opts) -> Unit, val onError: (String) -> Unit)
 
 private val EDITOR_TITLES = mapOf(
-  "organize" to "Arrange pages", "workflow" to "Add steps", "redact" to "Mark what to black out", "crop" to "Crop or resize", "fillSign" to "Fill in and sign",
-  "watermark" to "Options", "metadata" to "Details",
+  "organize" to "Sắp xếp trang", "workflow" to "Thêm bước", "redact" to "Đánh dấu vùng cần che", "crop" to "Cắt hoặc đổi cỡ", "fillSign" to "Điền và ký",
+  "watermark" to "Tùy chọn", "metadata" to "Chi tiết",
 )
 
 @Composable
@@ -84,28 +84,28 @@ private fun Editor(id: String, p: EditorProps) = when (id) {
 }
 
 private val DETAIL_FIELDS = listOf(
-  OptDef.Text("title", "Title", "", "Untitled"),
-  OptDef.Text("author", "Author", "", "Your name"),
-  OptDef.Text("subject", "Subject", "", "What it's about"),
-  OptDef.Text("keywords", "Keywords", "", "invoice, 2026, tax"),
+  OptDef.Text("title", "Tiêu đề", "", "Chưa đặt tên"),
+  OptDef.Text("author", "Tác giả", "", "Tên của bạn"),
+  OptDef.Text("subject", "Chủ đề", "", "Nội dung về gì"),
+  OptDef.Text("keywords", "Từ khóa", "", "hóa đơn, 2026, thuế"),
 )
 
 // The fields start as what the PDF says now, read once per file ("for" remembers which), so a resumed draft keeps
 // what was typed.
 @Composable
 private fun DetailsEditor(p: EditorProps) {
-  val file = p.file ?: return T("Choose a PDF to see and change its details.", Type.small, c.sub)
+  val file = p.file ?: return T("Chọn một PDF để xem và sửa thông tin của nó.", Type.small, c.sub)
   LaunchedEffect(file.path) {
     if (p.value.str("for") == file.path) return@LaunchedEffect
     try {
       val now = withContext(Dispatchers.IO) { readDetails(File(file.path).readBytes()) }
       p.onChange { v -> now.entries.fold(v.with("for", file.path)) { acc, (k, s) -> acc.with(k, s) } }
     } catch (e: Exception) {
-      p.onError(e.message ?: "Could not read this PDF.")
+      p.onError(e.message ?: "Không đọc được PDF này.")
     }
   }
   Options(DETAIL_FIELDS, p.value) { v -> p.onChange { v } }
-  T("Leave a field empty to remove it.", Type.small, c.sub)
+  T("Để trống một ô để xóa thông tin đó.", Type.small, c.sub)
 }
 
 private fun stripPdf(name: String) = name.replace(Regex("\\.pdf$", RegexOption.IGNORE_CASE), "")
@@ -185,9 +185,9 @@ fun ToolScreen(id: String, resume: Boolean) {
       } catch (e: UserError) {
         error = e.message ?: ""
       } catch (_: OutOfMemoryError) {
-        error = "This PDF is too big to work on in one go on this phone. Try splitting it first."
+        error = "PDF này quá lớn để xử lý một lần trên điện thoại. Hãy thử tách nhỏ nó trước."
       } catch (e: Exception) {
-        error = e.message ?: "Something went wrong with this PDF."
+        error = e.message ?: "Đã xảy ra lỗi với PDF này."
       }
       busy = ""
     }
@@ -209,7 +209,7 @@ fun ToolScreen(id: String, resume: Boolean) {
   }
 
   Screen(bottom = 40.dp) {
-    BackBar("Tools") { nav.back() }
+    BackBar("Công cụ") { nav.back() }
     // The tool's own glow card, like Home's: its picture on a Cool Blue tile (drawn in light colours whatever the theme,
     // so it reads on the dark card), the name in white and the description in Cool Blue.
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).glow(c.hero, 0.95f, 1.15f).padding(18.dp)) {
@@ -218,16 +218,16 @@ fun ToolScreen(id: String, resume: Boolean) {
         Spacer(Modifier.size(14.dp))
         T(tool.title, Type.title.copy(fontSize = 23.sp, lineHeight = 30.sp), Color.White, Modifier.weight(1f))
         val pinned = tool.id in Pins.ids
-        IconBtn(if (pinned) I.pin else I.pinOutline, 22.dp, if (pinned) Brand.tangerine else Color.White, if (pinned) "Unpin from Home" else "Pin to top of Home") { Pins.toggle(tool.id) }
+        IconBtn(if (pinned) I.pin else I.pinOutline, 22.dp, if (pinned) Brand.tangerine else Color.White, if (pinned) "Bỏ ghim khỏi Trang chủ" else "Ghim lên đầu Trang chủ") { Pins.toggle(tool.id) }
       }
       T(tool.desc, Type.body, Brand.cool.copy(alpha = 0.9f), Modifier.padding(top = 14.dp))
     }
 
-    StepHead(1, if (multi) "Choose PDFs" else "Choose a PDF")
+    StepHead(1, if (multi) "Chọn PDF" else "Chọn một PDF")
     if (files.isEmpty()) {
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        PickerCard("Device Storage", "Drive, Downloads, Phone", I.fileDocumentOutline, Brand.cool, Brand.cherry, Modifier.weight(1f), pickDevice)
-        PickerCard("App Files", if (Backup.state.enabled) "Saved here or in Drive" else "Saved in PDF Tools", I.folderOutline, c.accentSoft, c.accent, Modifier.weight(1f)) { appFiles = true }
+        PickerCard("Bộ nhớ thiết bị", "Drive, Downloads, Điện thoại", I.fileDocumentOutline, Brand.cool, Brand.cherry, Modifier.weight(1f), pickDevice)
+        PickerCard("Tệp của ứng dụng", if (Backup.state.enabled) "Lưu ở đây hoặc trên Drive" else "Lưu trong PDF Tools", I.folderOutline, c.accentSoft, c.accent, Modifier.weight(1f)) { appFiles = true }
       }
     } else {
       Group(Modifier.animateContentSize()) {
@@ -235,17 +235,17 @@ fun ToolScreen(id: String, resume: Boolean) {
           Reorderable(files, { it.path }, changeFiles) { f, i, _ -> Box(Modifier.background(c.surface)) { FileRow(f, i, true, files.size, changeFiles, files) } }
         } else files.forEachIndexed { i, f -> FileRow(f, i, false, files.size, changeFiles, files) }
       }
-      if (multi && files.size > 1) T("Use the arrows, or hold a file and drag it, to change the order.", Type.small, c.sub, Modifier.padding(top = 8.dp))
+      if (multi && files.size > 1) T("Dùng mũi tên, hoặc giữ một tệp rồi kéo, để đổi thứ tự.", Type.small, c.sub, Modifier.padding(top = 8.dp))
       if (multi) {
         Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-          Btn("Device", Modifier.weight(1f), I.plus, BtnKind.Secondary, height = 46.dp, onClick = pickDevice)
-          Btn("App Files", Modifier.weight(1f), I.folderOutline, BtnKind.Secondary, height = 46.dp) { appFiles = true }
+          Btn("Thiết bị", Modifier.weight(1f), I.plus, BtnKind.Secondary, height = 46.dp, onClick = pickDevice)
+          Btn("Tệp ứng dụng", Modifier.weight(1f), I.folderOutline, BtnKind.Secondary, height = 46.dp) { appFiles = true }
         }
       }
     }
 
     if (hasEditor || tool.opts.isNotEmpty()) {
-      StepHead(2, EDITOR_TITLES[tool.id] ?: "Options")
+      StepHead(2, EDITOR_TITLES[tool.id] ?: "Tùy chọn")
       if (hasEditor) Editor(tool.id, EditorProps(files.firstOrNull(), opts, { fn -> opts = fn(opts) }) { error = it })
       else Options(tool.opts, opts) { opts = it }
     }
@@ -256,7 +256,7 @@ fun ToolScreen(id: String, resume: Boolean) {
     ) { exec("run") }
     if (!tool.noPreview) {
       Btn(
-        if (busy == "preview") "Preparing preview…" else "Preview result", Modifier.fillMaxWidth().padding(top = 10.dp), I.eyeOutline, BtnKind.Secondary,
+        if (busy == "preview") "Đang chuẩn bị xem trước…" else "Xem trước kết quả", Modifier.fillMaxWidth().padding(top = 10.dp), I.eyeOutline, BtnKind.Secondary,
         busy = busy == "preview", enabled = ready && busy != "run",
       ) { exec("preview") }
     }
@@ -271,26 +271,26 @@ fun ToolScreen(id: String, resume: Boolean) {
 
     AnimatedVisibility(results.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = fadeOut()) {
       Column {
-        GroupLabel(if (results.size > 1) "${results.size} files saved" else "Saved", "Open Files", { nav.show(Tab.Files) })
+        GroupLabel(if (results.size > 1) "Đã lưu ${results.size} tệp" else "Đã lưu", "Mở Tệp", { nav.show(Tab.Files) })
         Group {
           results.forEachIndexed { i, r ->
             ListRow(
               stem(r.name), first = i == 0, lead = { DocGlyph(kindOf(r.name)) }, marquee = true, onClick = { openFile(r.path, r.name) },
               subtitle = if (results.size == 1 && files.size == 1 && files[0].size != null) "${fmtSize(files[0].size)} → ${fmtSize(r.size)}" else fmtSize(r.size),
             ) {
-              T("Share", Type.label, modifier = Modifier.tap(shape = CircleShape, scaleTo = 0.92f) { share(r.path, r.name) }.border(1.dp, c.lineStrong, CircleShape).padding(horizontal = 14.dp, vertical = 7.dp))
+              T("Chia sẻ", Type.label, modifier = Modifier.tap(shape = CircleShape, scaleTo = 0.92f) { share(r.path, r.name) }.border(1.dp, c.lineStrong, CircleShape).padding(horizontal = 14.dp, vertical = 7.dp))
             }
           }
         }
         if (results.size > 1) {
-          Btn("Share all as one ZIP", Modifier.fillMaxWidth().padding(top = 10.dp), I.folderZipOutline, BtnKind.Secondary) {
+          Btn("Chia sẻ tất cả dạng ZIP", Modifier.fillMaxWidth().padding(top = 10.dp), I.folderZipOutline, BtnKind.Secondary) {
             scope.launch {
               val z = withContext(Dispatchers.IO) { saveBytes("${files.firstOrNull()?.name?.let(::stripPdf) ?: "export"}-all", "zip", zipFiles(results.map { Named(it.name, File(it.path).readBytes()) })) }
               share(z.path, z.name)
             }
           }
         }
-        T("Use another file", Type.item, c.accent, Modifier.fillMaxWidth().padding(top = 18.dp).tap { changeFiles(emptyList()) }.padding(vertical = 4.dp), align = TextAlign.Center)
+        T("Dùng tệp khác", Type.item, c.accent, Modifier.fillMaxWidth().padding(top = 18.dp).tap { changeFiles(emptyList()) }.padding(vertical = 4.dp), align = TextAlign.Center)
       }
     }
   }
@@ -301,7 +301,7 @@ fun ToolScreen(id: String, resume: Boolean) {
   }
   parts?.let { list ->
     // Preview of a tool that makes several files: one temp file at a time, so parts open one at a time.
-    AppDialog({ parts = null }, "Preview", "This makes ${plural(list.size, "file")}. Tap one to open it.") {
+    AppDialog({ parts = null }, "Xem trước", "Kết quả gồm ${plural(list.size, "file")}. Chạm vào một tệp để mở.") {
       Group(Modifier.padding(top = 14.dp)) {
         list.forEachIndexed { i, p ->
           ListRow(stem(p.name), first = i == 0, lead = { DocGlyph() }, subtitle = fmtSize(p.bytes.size.toLong()), marquee = true, chevron = true, onClick = {
@@ -314,7 +314,7 @@ fun ToolScreen(id: String, resume: Boolean) {
   naming?.let { (outs, name) ->
     // Only Discard throws the result away; back or a stray tap outside keeps it under the suggested name.
     PromptDialog(
-      "Save as", name, if (outs.size > 1) "Each of the ${outs.size} files starts with this name." else "Saved in Files.", "File name", "Save", "Discard",
+      "Lưu với tên", name, if (outs.size > 1) "Mỗi tệp trong ${outs.size} tệp sẽ bắt đầu bằng tên này." else "Lưu trong Tệp.", "Tên tệp", "Lưu", "Bỏ",
       onClose = { naming = null }, onDismiss = { saveAs(outs, name) }, onSubmit = { saveAs(outs, it) },
     )
   }
@@ -350,10 +350,10 @@ private fun FileRow(f: Picked, i: Int, draggable: Boolean, count: Int, set: (Lis
       }
     },
   ) {
-    IconBtn(I.close, label = "Remove") { set(files.filter { it !== f }) }
+    IconBtn(I.close, label = "Xóa") { set(files.filter { it !== f }) }
     if (draggable) {
-      IconBtn(I.chevronUp, color = if (i == 0) c.faint else c.ink, label = "Move earlier") { set(files.swap(i, i - 1)) }
-      IconBtn(I.chevronDown, color = if (i == count - 1) c.faint else c.ink, label = "Move later") { set(files.swap(i, i + 1)) }
+      IconBtn(I.chevronUp, color = if (i == 0) c.faint else c.ink, label = "Chuyển lên trước") { set(files.swap(i, i - 1)) }
+      IconBtn(I.chevronDown, color = if (i == count - 1) c.faint else c.ink, label = "Chuyển ra sau") { set(files.swap(i, i + 1)) }
     }
   }
 }
@@ -375,14 +375,14 @@ private fun PasswordDialog(file: Picked, onUnlock: (String) -> Unit, onSkip: () 
     }
     Unit
   }
-  AppDialog(onSkip, "Password-protected PDF", "Enter the password for “${stem(file.name)}” to use it here.") {
+  AppDialog(onSkip, "PDF có mật khẩu", "Nhập mật khẩu của “${stem(file.name)}” để dùng ở đây.") {
     Field(
-      password, { password = it; wrong = false }, Modifier.padding(top = 14.dp), "Password", secret = !shown, error = wrong, onDone = submit,
-    ) { IconBtn(if (shown) I.eyeOffOutline else I.eyeOutline, color = c.sub, label = if (shown) "Hide password" else "Show password") { shown = !shown } }
-    if (wrong) T("That password didn’t open it. Try again.", Type.small, c.accent, Modifier.padding(top = 6.dp))
+      password, { password = it; wrong = false }, Modifier.padding(top = 14.dp), "Mật khẩu", secret = !shown, error = wrong, onDone = submit,
+    ) { IconBtn(if (shown) I.eyeOffOutline else I.eyeOutline, color = c.sub, label = if (shown) "Ẩn mật khẩu" else "Hiện mật khẩu") { shown = !shown } }
+    if (wrong) T("Mật khẩu này không mở được tệp. Hãy thử lại.", Type.small, c.accent, Modifier.padding(top = 6.dp))
     Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-      Btn("Skip", Modifier.weight(1f), kind = BtnKind.Secondary, onClick = onSkip)
-      Btn("Unlock", Modifier.weight(1f), busy = busy, enabled = password.isNotEmpty(), onClick = submit)
+      Btn("Bỏ qua", Modifier.weight(1f), kind = BtnKind.Secondary, onClick = onSkip)
+      Btn("Mở khóa", Modifier.weight(1f), busy = busy, enabled = password.isNotEmpty(), onClick = submit)
     }
   }
 }
@@ -393,7 +393,7 @@ private fun PasswordDialog(file: Picked, onUnlock: (String) -> Unit, onSkip: () 
 private fun OrganizeEditor(p: EditorProps) {
   val file = p.file
   if (file == null) {
-    T("Your pages appear here once you choose a PDF.", Type.small, c.sub)
+    T("Các trang của bạn sẽ hiện ở đây khi bạn chọn PDF.", Type.small, c.sub)
     return
   }
   var pages by remember(file.path) { mutableStateOf<List<Pair<Int, Int>>?>(null) }
@@ -409,7 +409,7 @@ private fun OrganizeEditor(p: EditorProps) {
       pages = sizes
       if (restored.value) restored.value = false else set(sizes.indices.map { PageOrder(it) })
     } catch (_: Exception) {
-      p.onError("Could not read this PDF. It may be damaged or password-protected.")
+      p.onError("Không đọc được PDF này. Có thể tệp bị hỏng hoặc có mật khẩu.")
     }
     thumbs = withContext(Dispatchers.IO) { runCatching { renderThumbs(file.path, 200) }.getOrNull() }
   }
@@ -420,8 +420,8 @@ private fun OrganizeEditor(p: EditorProps) {
   }
   val edit = { fn: (List<PageOrder>) -> List<PageOrder> -> p.onChange { v -> v.put("order", fn(v.get<List<PageOrder>>("order") ?: emptyList())) } }
   Row(Modifier.padding(bottom = 12.dp), verticalAlignment = Alignment.Top) {
-    T("Keeping ${order.count { !it.del }} of ${plural(sizes.size, "page")}. Hold a page to drag it.", Type.small, c.sub, Modifier.weight(1f))
-    T("Reset", Type.med, c.accent, Modifier.padding(start = 12.dp).tap(scaleTo = 0.92f) { set(sizes.indices.map { PageOrder(it) }) })
+    T("Giữ ${order.count { !it.del }}/${plural(sizes.size, "page")}. Giữ một trang để kéo.", Type.small, c.sub, Modifier.weight(1f))
+    T("Đặt lại", Type.med, c.accent, Modifier.padding(start = 12.dp).tap(scaleTo = 0.92f) { set(sizes.indices.map { PageOrder(it) }) })
   }
   Reorderable(order, { it.i }, set, columns = 2, gap = 10.dp) { o, k, _ ->
     OrganizeTile(o, k, sizes.getOrNull(o.i), thumbs?.getOrNull(o.i),
@@ -457,10 +457,10 @@ private fun OrganizeTile(o: PageOrder, k: Int, size: Pair<Int, Int>?, thumb: Thu
       if (o.rot > 0) T("${o.rot}°", Type.label.copy(fontSize = 11.sp), Color.White, Modifier.align(Alignment.TopEnd).padding(6.dp).background(c.accent, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
     }
     Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceAround) {
-      if (o.del) IconBtn(I.restore, label = "Keep page ${o.i + 1}", onClick = onDelete)
+      if (o.del) IconBtn(I.restore, label = "Giữ trang ${o.i + 1}", onClick = onDelete)
       else {
-        IconBtn(I.rotateRight, label = "Rotate page ${o.i + 1}", onClick = onRotate)
-        IconBtn(I.deleteOutline, label = "Remove page ${o.i + 1}, position ${k + 1}", onClick = onDelete)
+        IconBtn(I.rotateRight, label = "Xoay trang ${o.i + 1}", onClick = onRotate)
+        IconBtn(I.deleteOutline, label = "Xóa trang ${o.i + 1}, vị trí ${k + 1}", onClick = onDelete)
       }
     }
   }
@@ -483,13 +483,13 @@ private fun WatermarkEditor(p: EditorProps) {
         Triple(if (rot % 180 != 0) h.toFloat() to w.toFloat() else w.toFloat() to h.toFloat(), rot, renderThumbs(file.path, 480, 1)[0])
       }
     } catch (e: Exception) {
-      p.onError(e.message ?: "Could not read this PDF.")
+      p.onError(e.message ?: "Không đọc được PDF này.")
     }
   }
   BoxWithConstraints(Modifier.fillMaxWidth().heightIn(min = 120.dp).background(c.sunken, RoundedCornerShape(Radius.group)).padding(12.dp), contentAlignment = Alignment.Center) {
     val pg = page
     when {
-      file == null -> T("Choose a PDF to preview the watermark on its first page.", Type.small, c.sub, align = TextAlign.Center)
+      file == null -> T("Chọn một PDF để xem trước hình mờ trên trang đầu.", Type.small, c.sub, align = TextAlign.Center)
       pg == null -> Spinner()
       else -> {
         val (stored, rot, t) = pg
@@ -516,7 +516,7 @@ private fun WatermarkEditor(p: EditorProps) {
       }
     }
   }
-  T("Preview · page 1", Type.small, c.sub, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 14.dp), align = TextAlign.Center)
+  T("Xem trước · trang 1", Type.small, c.sub, Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 14.dp), align = TextAlign.Center)
   Options(toolById("watermark")!!.opts, p.value) { v -> p.onChange { v } }
 }
 
@@ -532,9 +532,9 @@ private fun WorkflowEditor(p: EditorProps) {
     Column(Modifier.fillMaxWidth().background(c.surface, shape).border(0.6.dp, c.lineStrong, shape).padding(start = 14.dp, end = 8.dp, top = 10.dp)) {
       Row(Modifier.padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(24.dp).background(c.accent, CircleShape), contentAlignment = Alignment.Center) { T("${k + 1}", Type.label.copy(fontSize = 11.sp), Color.White) }
-        T(t?.stepTitle ?: "Unavailable step", Type.bold.copy(fontSize = 15.sp), modifier = Modifier.weight(1f).padding(start = 10.dp))
-        IconBtn(I.close, label = "Remove step") { set(steps.filter { it.id != step.id }) }
-        Box(handle.padding(7.dp)) { Icon(I.drag, 22.dp, c.faint, label = "Reorder") }
+        T(t?.stepTitle ?: "Bước không khả dụng", Type.bold.copy(fontSize = 15.sp), modifier = Modifier.weight(1f).padding(start = 10.dp))
+        IconBtn(I.close, label = "Xóa bước") { set(steps.filter { it.id != step.id }) }
+        Box(handle.padding(7.dp)) { Icon(I.drag, 22.dp, c.faint, label = "Sắp xếp") }
       }
       Column(Modifier.padding(end = 6.dp)) {
         Options(t?.stepOpts ?: emptyList(), step.opts) { o -> set(steps.map { if (it.id == step.id) it.copy(opts = JsonObject(o)) else it }) }
@@ -542,8 +542,8 @@ private fun WorkflowEditor(p: EditorProps) {
     }
   }
   T(
-    if (steps.isNotEmpty()) "Steps run top to bottom. Merge and Mix combine all files; other steps run on each file. Drag the handles to reorder. Add another:"
-    else "Pick the steps to run, in order. Choose several PDFs to merge them first.",
+    if (steps.isNotEmpty()) "Các bước chạy từ trên xuống dưới. Gộp và Trộn xử lý tất cả tệp; các bước khác chạy trên từng tệp. Kéo tay cầm để đổi thứ tự. Thêm bước khác:"
+    else "Chọn các bước cần chạy, theo thứ tự. Chọn nhiều PDF để gộp chúng trước.",
     Type.small, c.sub, Modifier.padding(top = if (steps.isNotEmpty()) 12.dp else 0.dp, bottom = 10.dp),
   )
   FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -93,7 +93,7 @@ object DevicePdfs {
   fun stale() = System.currentTimeMillis() - cacheFile.lastModified() > STALE_MS
 }
 
-private enum class PhoneFilter(val label: String) { All("All"), Recent("Recent"), Large("5 MB+") }
+private enum class PhoneFilter(val label: String) { All("Tất cả"), Recent("Gần đây"), Large("Từ 5 MB") }
 
 /** A row of filter chips that scrolls sideways. */
 @Composable
@@ -125,20 +125,20 @@ fun PhoneFiles(query: String) {
   if (!allowed) {
     Empty(
       { ToolArt("files", 112.dp) },
-      "See every PDF on this phone",
-      if (DevicePdfs.legacy) "Pick a PDF from your phone's files and it opens right here."
-      else "Allow access to your files once, and every PDF on this phone (Downloads, WhatsApp, Documents) shows up here, searchable. Nothing leaves your phone.",
+      "Xem mọi PDF trên điện thoại",
+      if (DevicePdfs.legacy) "Chọn một PDF từ tệp trong điện thoại và nó sẽ mở ngay tại đây."
+      else "Cho phép truy cập tệp một lần, và mọi PDF trên điện thoại (Downloads, WhatsApp, Documents) sẽ hiện ở đây, tìm kiếm được. Không có gì rời khỏi điện thoại của bạn.",
     ) {
-      if (DevicePdfs.legacy) Btn("Browse for a PDF", Modifier.fillMaxWidth(), I.folderOutline) {
+      if (DevicePdfs.legacy) Btn("Chọn một PDF", Modifier.fillMaxWidth(), I.folderOutline) {
         scope.launch { pickPdfs(false).firstOrNull()?.let { openFile(it.path, it.name) } }
-      } else Btn("Allow access", Modifier.fillMaxWidth(), I.folderOutline) { DevicePdfs.openSettings() }
+      } else Btn("Cho phép truy cập", Modifier.fillMaxWidth(), I.folderOutline) { DevicePdfs.openSettings() }
     }
     return
   }
 
   val all = files
   if (all == null) {
-    T("Looking for PDFs…", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 36.dp), align = TextAlign.Center)
+    T("Đang tìm PDF…", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 36.dp), align = TextAlign.Center)
     return
   }
   val needle = query.trim().lowercase()
@@ -153,13 +153,13 @@ fun PhoneFiles(query: String) {
     ChipRow(PhoneFilter.entries.map { it to it.label }, filter, Modifier.padding(bottom = 6.dp)) { filter = it }
     if (hits.isEmpty()) {
       T(
-        if (needle.isEmpty()) "No PDFs found on this phone." else "No PDFs match \"${query.trim()}\".",
+        if (needle.isEmpty()) "Không tìm thấy PDF nào trên điện thoại." else "Không có PDF nào khớp \"${query.trim()}\".",
         Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 36.dp), align = TextAlign.Center,
       )
       return@Column
     }
     byDay(hits.take(MAX_SHOWN)) { it.modified }.forEachIndexed { gi, (label, items) ->
-      if (gi == 0) GroupLabel(label, if (busy) "Scanning…" else "Rescan", { if (!busy) scope.launch { rescan() } }, first = true)
+      if (gi == 0) GroupLabel(label, if (busy) "Đang quét…" else "Quét lại", { if (!busy) scope.launch { rescan() } }, first = true)
       else GroupLabel(label)
       Group {
         items.forEachIndexed { i, f ->
@@ -178,7 +178,7 @@ fun PhoneFiles(query: String) {
       }
     }
     if (hits.size > MAX_SHOWN) T(
-      "Showing the newest $MAX_SHOWN of ${hits.size}. Search to narrow it down.",
+      "Hiển thị $MAX_SHOWN mới nhất trong ${hits.size}. Hãy tìm kiếm để thu hẹp.",
       Type.small, c.sub, Modifier.fillMaxWidth().padding(top = 18.dp), align = TextAlign.Center,
     )
   }

@@ -276,22 +276,22 @@ private fun ResumeBar(tool: Tool, files: Int) {
   val shape = RoundedCornerShape(Radius.card)
   var confirming by remember { mutableStateOf(false) }
   if (confirming) ConfirmDialog(
-    "Discard ${tool.title}?", "The ${plural(files, "file")} you picked and the options you set will be cleared. Your files themselves aren't touched.",
-    "Discard", danger = true, onDismiss = { confirming = false },
+    "Bỏ ${tool.title}?", "${plural(files, "file")} bạn đã chọn và các tùy chọn đã đặt sẽ bị xóa. Bản thân các tệp của bạn không bị ảnh hưởng.",
+    "Bỏ", danger = true, onDismiss = { confirming = false },
   ) { Drafts.set(null) }
   Row(
     Modifier.padding(horizontal = 14.dp).padding(bottom = 10.dp).fillMaxWidth().shadow(10.dp, shape)
-      .tap(shape = shape, scaleTo = 0.98f, label = "Continue ${tool.title}") { nav.tool(tool.id, resume = true) }
+      .tap(shape = shape, scaleTo = 0.98f, label = "Tiếp tục ${tool.title}") { nav.tool(tool.id, resume = true) }
       .background(c.surface, shape).border(0.6.dp, c.lineStrong, shape).padding(8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     ArtTile(tool.id, 42.dp)
     Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
       T(tool.title, Type.bold, maxLines = 1)
-      T("Still open · ${plural(files, "file")}", Type.small.copy(fontSize = Type.small.fontSize * 0.93f), c.sub, maxLines = 1)
+      T("Đang mở dở · ${plural(files, "file")}", Type.small.copy(fontSize = Type.small.fontSize * 0.93f), c.sub, maxLines = 1)
     }
-    T("Discard", Type.label, c.sub, Modifier.tap(scaleTo = 0.9f) { confirming = true }.padding(horizontal = 10.dp, vertical = 8.dp))
-    Box(Modifier.background(c.ink, CircleShape).padding(horizontal = 14.dp, vertical = 8.dp)) { T("Open", Type.label, c.onInk) }
+    T("Bỏ", Type.label, c.sub, Modifier.tap(scaleTo = 0.9f) { confirming = true }.padding(horizontal = 10.dp, vertical = 8.dp))
+    Box(Modifier.background(c.ink, CircleShape).padding(horizontal = 14.dp, vertical = 8.dp)) { T("Mở", Type.label, c.onInk) }
   }
 }
 
@@ -301,7 +301,7 @@ private fun ResumeBar(tool: Tool, files: Int) {
 private fun NavPill(haze: HazeState) {
   val nav = LocalNav.current
   val slots = listOf<Pair<Tab?, Int>>(Tab.Tools to I.viewGridOutline, null to I.cameraPlusOutline, Tab.Files to I.folderOutline, Tab.Settings to I.cogOutline)
-  val labels = listOf("Tools", "Scan a document", "Files", "Settings")
+  val labels = listOf("Công cụ", "Quét tài liệu", "Tệp", "Cài đặt")
   val pill = CircleShape
   val glass = c.panel
   // Black Cherry glass: enough colour to read over warm paper, see-through enough to show the blur.
@@ -343,7 +343,7 @@ private fun NavPill(haze: HazeState) {
 // Whether the terms and privacy policy were accepted on this device. Raising VERSION shows them again after an update.
 object Terms {
   const val VERSION = 2
-  const val UPDATED = "20 October 2026"
+  const val UPDATED = "20 tháng 10, 2026"
   private val file get() = File(appContext.filesDir, "consent.json") // same file the Expo app used
 
   fun accepted(): Boolean = try {
@@ -378,7 +378,7 @@ fun DarkSurfaceBars() {
 @Composable
 fun BackBar(label: String, onBack: () -> Unit) {
   Row(
-    Modifier.padding(top = 4.dp, bottom = 10.dp).offset(x = (-8).dp).tap(shape = CircleShape, scaleTo = 0.94f, label = "Back", onClick = onBack)
+    Modifier.padding(top = 4.dp, bottom = 10.dp).offset(x = (-8).dp).tap(shape = CircleShape, scaleTo = 0.94f, label = "Quay lại", onClick = onBack)
       .padding(vertical = 6.dp, horizontal = 4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {

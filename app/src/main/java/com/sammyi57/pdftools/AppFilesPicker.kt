@@ -87,7 +87,7 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
         for (p in list) {
           val f = byId[p.path]
           if (f == null) { out.add(p); continue }
-          busy = "Getting “${stem(f.name)}” from Drive…"
+          busy = "Đang lấy “${stem(f.name)}” từ Drive…"
           out.add(Backup.fetch(f))
         }
         busy = ""
@@ -105,28 +105,28 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
     Column(Modifier.fillMaxSize()) {
       Column(Modifier.background(c.surface).statusBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-          if (folder != null && needle.isEmpty()) IconBtn(I.arrowLeft, 24.dp, label = "Back") { folder = null }
+          if (folder != null && needle.isEmpty()) IconBtn(I.arrowLeft, 24.dp, label = "Quay lại") { folder = null }
           else Box(Modifier.size(40.dp).background(c.accentSoft, RoundedCornerShape(Radius.control)), contentAlignment = Alignment.Center) { Icon(I.folderOutline, 24.dp, c.accent) }
           Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            T(if (multi) "Select PDFs" else "Select a PDF", Type.title.copy(fontSize = Type.title.fontSize * 0.72f))
+            T(if (multi) "Chọn PDF" else "Chọn một PDF", Type.title.copy(fontSize = Type.title.fontSize * 0.72f))
             T(
               when {
-                needle.isNotEmpty() -> "Search in App Files"
+                needle.isNotEmpty() -> "Tìm trong tệp của ứng dụng"
                 folder != null -> folder!!
-                onDrive -> "Google Drive · PDF Tools folder"
-                else -> "App Files · Saved documents"
+                onDrive -> "Google Drive · thư mục PDF Tools"
+                else -> "Tệp của ứng dụng · Tài liệu đã lưu"
               },
               Type.small, c.sub, maxLines = 1,
             )
           }
-          IconBtn(I.close, 22.dp, label = "Close", onClick = onClose)
+          IconBtn(I.close, 22.dp, label = "Đóng", onClick = onClose)
         }
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
           if (Backup.state.enabled) {
-            Segmented(listOf(false to "This phone", true to "Google Drive"), onDrive, icons = listOf(I.cellphone, I.googleDrive)) { if (it != onDrive) showSource(it) }
+            Segmented(listOf(false to "Điện thoại", true to "Google Drive"), onDrive, icons = listOf(I.cellphone, I.googleDrive)) { if (it != onDrive) showSource(it) }
             Spacer(Modifier.height(10.dp))
           }
-          SearchField(query, { query = it }, if (onDrive) "Search Drive PDFs…" else "Search saved PDFs…")
+          SearchField(query, { query = it }, if (onDrive) "Tìm PDF trên Drive…" else "Tìm PDF đã lưu…")
         }
       }
       AnimatedVisibility(busy.isNotEmpty() || problem.isNotEmpty()) {
@@ -144,7 +144,7 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
         // Anything else on the phone (Downloads, other apps' files) through the system picker, from this same sheet.
         if (!onDrive && needle.isEmpty() && folder == null) Group {
           ListRow(
-            "Browse phone storage", first = true, lead = { Lead(I.cellphone) }, subtitle = "Downloads, documents and other folders", chevron = true,
+            "Duyệt bộ nhớ điện thoại", first = true, lead = { Lead(I.cellphone) }, subtitle = "Downloads, tài liệu và các thư mục khác", chevron = true,
             onClick = {
               scope.launch {
                 val got = pickPdfs(multi)
@@ -154,7 +154,7 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
           )
         }
         if (needle.isEmpty() && folder == null && folders.isNotEmpty()) {
-          GroupLabel("Folders", first = onDrive)
+          GroupLabel("Thư mục", first = onDrive)
           Group {
             folders.forEachIndexed { i, (name, n) ->
               ListRow(name, first = i == 0, lead = { FolderGlyph(32.dp) }, subtitle = plural(n, "PDF"), chevron = true, onClick = { folder = name })
@@ -165,12 +165,12 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
           val allOn = shown.all { it.path in selected }
           GroupLabel(
             when {
-              needle.isNotEmpty() -> "${plural(shown.size, "PDF")} found"
+              needle.isNotEmpty() -> "Tìm thấy ${plural(shown.size, "PDF")}"
               folder != null -> folder!!
-              folders.isNotEmpty() -> "Files in Root"
-              else -> "All Saved PDFs"
+              folders.isNotEmpty() -> "Tệp ở thư mục gốc"
+              else -> "Tất cả PDF đã lưu"
             },
-            if (multi) (if (allOn) "Deselect all" else "Select all") else null,
+            if (multi) (if (allOn) "Bỏ chọn tất cả" else "Chọn tất cả") else null,
             {
               selected = if (allOn) selected - shown.map { it.path }.toSet() else selected + shown.associate { it.path to Picked(it.name, it.path, it.size) }
             },
@@ -192,12 +192,12 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
         } else {
           Empty(
             { ToolArt("files", 80.dp) },
-            when { needle.isNotEmpty() -> "No matching PDFs"; folder != null -> "This folder is empty"; else -> "No saved PDFs found" },
+            when { needle.isNotEmpty() -> "Không có PDF phù hợp"; folder != null -> "Thư mục này trống"; else -> "Không tìm thấy PDF đã lưu" },
             when {
-              needle.isNotEmpty() -> "No PDF files found matching \"$query\"."
-              folder != null -> "PDFs saved or moved into this folder will appear here."
-              onDrive -> "PDFs in the PDF Tools folder of your Google Drive will appear here."
-              else -> "PDFs saved from your tools will appear here."
+              needle.isNotEmpty() -> "Không có tệp PDF nào khớp \"$query\"."
+              folder != null -> "PDF được lưu hoặc chuyển vào thư mục này sẽ hiện ở đây."
+              onDrive -> "PDF trong thư mục PDF Tools của Google Drive sẽ hiện ở đây."
+              else -> "PDF được lưu từ các công cụ sẽ hiện ở đây."
             },
           )
         }
@@ -206,10 +206,10 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
       if (multi) {
         Row(Modifier.fillMaxWidth().background(c.surface).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
           Column(Modifier.weight(1f)) {
-            T(if (selected.isNotEmpty()) "${plural(selected.size, "PDF")} selected" else "None selected", Type.bold)
-            if (selected.isNotEmpty()) T("Clear all", Type.small, c.accent, Modifier.tap { selected = emptyMap() })
+            T(if (selected.isNotEmpty()) "Đã chọn ${plural(selected.size, "PDF")}" else "Chưa chọn", Type.bold)
+            if (selected.isNotEmpty()) T("Bỏ hết", Type.small, c.accent, Modifier.tap { selected = emptyMap() })
           }
-          Btn(if (selected.isNotEmpty()) "Add (${selected.size})" else "Select PDFs", enabled = selected.isNotEmpty(), busy = busy.isNotEmpty()) { finish(selected.values.toList()) }
+          Btn(if (selected.isNotEmpty()) "Thêm (${selected.size})" else "Chọn PDF", enabled = selected.isNotEmpty(), busy = busy.isNotEmpty()) { finish(selected.values.toList()) }
         }
       } else Spacer(Modifier.navigationBarsPadding())
     }

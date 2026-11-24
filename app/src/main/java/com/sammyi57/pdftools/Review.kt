@@ -141,12 +141,12 @@ fun Review(
     AnimatedContent(selecting, label = "bar", transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }) { sel ->
       Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (sel) {
-          Tap(I.close, "Cancel selection") { selected = emptyList() }
-          T("${selected.size} selected", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f))
-          T("Select all", Type.bold, ScanUi.accent, Modifier.tap { selected = pages.map { it.id } }.padding(horizontal = 12.dp, vertical = 12.dp))
+          Tap(I.close, "Hủy chọn") { selected = emptyList() }
+          T("Đã chọn ${selected.size}", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f))
+          T("Chọn tất cả", Type.bold, ScanUi.accent, Modifier.tap { selected = pages.map { it.id } }.padding(horizontal = 12.dp, vertical = 12.dp))
         } else {
-          Tap(I.arrowLeft, "Back", onClick = onClose)
-          Row(Modifier.weight(1f).tap(scaleTo = 0.97f, label = "Rename") { modal = "rename" }.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+          Tap(I.arrowLeft, "Quay lại", onClick = onClose)
+          Row(Modifier.weight(1f).tap(scaleTo = 0.97f, label = "Đổi tên") { modal = "rename" }.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             T(doc.name, Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f, fill = false), maxLines = 1)
             Spacer(Modifier.size(6.dp))
             Icon(I.pencilOutline, 15.dp, ScanUi.dim)
@@ -159,7 +159,7 @@ fun Review(
           ) {
             if (!ready) Spinner(ScanUi.onAccent, 16.dp) else Icon(I.filePdfBox, 18.dp, ScanUi.onAccent)
             Spacer(Modifier.size(6.dp))
-            T(if (doc.pdf != null) "Update PDF" else "Save PDF", Type.bold, ScanUi.onAccent)
+            T(if (doc.pdf != null) "Cập nhật PDF" else "Lưu PDF", Type.bold, ScanUi.onAccent)
           }
         }
       }
@@ -198,7 +198,7 @@ fun Review(
       }
       if (!selecting) item {
         Box(
-          Modifier.size(62.dp, 76.dp).tap(scaleTo = 0.92f, label = "Add pages", onClick = onAddMore).border(2.dp, ScanUi.accent.copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
+          Modifier.size(62.dp, 76.dp).tap(scaleTo = 0.92f, label = "Thêm trang", onClick = onAddMore).border(2.dp, ScanUi.accent.copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
           contentAlignment = Alignment.Center,
         ) { Icon(I.plus, 24.dp, ScanUi.accent) }
       }
@@ -219,7 +219,7 @@ fun Review(
             editShots(pages.map { it.id }) { s, _ -> s.copy(brightness = current.shots[0].brightness, contrast = current.shots[0].contrast) }
           }
           "resize" -> Column {
-            SheetHead("Page size") { ApplyAll(current.size) { editPages(pages.map { it.id }) { it.copy(size = current.size) } } }
+            SheetHead("Khổ trang") { ApplyAll(current.size) { editPages(pages.map { it.id }) { it.copy(size = current.size) } } }
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
               PAGE_SIZES.forEach { (size, label) -> DarkChip(label, current.size == size) { editPages(targets) { it.copy(size = size) } } }
             }
@@ -229,19 +229,19 @@ fun Review(
     }
 
     val tools = listOf(
-      Triple(I.plusBoxMultipleOutline, "Add", selecting) to onAddMore,
-      Triple(I.cameraRetakeOutline, "Retake", selecting) to { onRetake(current) },
-      Triple(I.crop, "Crop", selecting) to { modal = "crop" },
+      Triple(I.plusBoxMultipleOutline, "Thêm", selecting) to onAddMore,
+      Triple(I.cameraRetakeOutline, "Chụp lại", selecting) to { onRetake(current) },
+      Triple(I.crop, "Cắt", selecting) to { modal = "crop" },
       // ponytail: rotating clears that page's cleanup/markup strokes; transform the strokes instead if people mind.
-      Triple(I.rotateRight, "Rotate", false) to { editShots(targets) { s, _ -> s.copy(rotation = (s.rotation + 90) % 360, strokes = emptyList()) } },
-      Triple(I.imageFilterBlackWhite, "Filters", false) to { sheet = if (sheet == "filters") "" else "filters" },
-      Triple(I.tuneVariant, "Adjust", false) to { sheet = if (sheet == "adjust") "" else "adjust" },
-      Triple(I.eraser, "Cleanup", selecting) to { modal = "cleanup" },
-      Triple(I.draw, "Markup", selecting) to { modal = "markup" },
-      Triple(I.resize, "Resize", false) to { sheet = if (sheet == "resize") "" else "resize" },
-      Triple(I.swapHorizontal, "Reorder", pages.size < 2) to { modal = "reorder" },
-      Triple(I.restore, "Reset", false) to { modal = "reset" },
-      Triple(I.deleteOutline, "Delete", false) to { modal = "delete" },
+      Triple(I.rotateRight, "Xoay", false) to { editShots(targets) { s, _ -> s.copy(rotation = (s.rotation + 90) % 360, strokes = emptyList()) } },
+      Triple(I.imageFilterBlackWhite, "Bộ lọc", false) to { sheet = if (sheet == "filters") "" else "filters" },
+      Triple(I.tuneVariant, "Chỉnh", false) to { sheet = if (sheet == "adjust") "" else "adjust" },
+      Triple(I.eraser, "Làm sạch", selecting) to { modal = "cleanup" },
+      Triple(I.draw, "Chú thích", selecting) to { modal = "markup" },
+      Triple(I.resize, "Đổi cỡ", false) to { sheet = if (sheet == "resize") "" else "resize" },
+      Triple(I.swapHorizontal, "Sắp xếp", pages.size < 2) to { modal = "reorder" },
+      Triple(I.restore, "Đặt lại", false) to { modal = "reset" },
+      Triple(I.deleteOutline, "Xóa", false) to { modal = "delete" },
     )
     Box(Modifier.fillMaxWidth().height(0.6.dp).background(ScanUi.line))
     Row(Modifier.fillMaxWidth().background(ScanUi.panel).horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 8.dp)) {
@@ -274,10 +274,10 @@ fun Review(
       Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
           Spacer(Modifier.size(48.dp))
-          T("Reorder pages", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center)
-          T("Done", Type.bold, ScanUi.accent, Modifier.tap { modal = "" }.padding(12.dp))
+          T("Sắp xếp trang", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center)
+          T("Xong", Type.bold, ScanUi.accent, Modifier.tap { modal = "" }.padding(12.dp))
         }
-        T("Hold a page and drag it to a new spot.", Type.small, ScanUi.dim, Modifier.fillMaxWidth(), align = TextAlign.Center)
+        T("Giữ một trang và kéo đến vị trí mới.", Type.small, ScanUi.dim, Modifier.fillMaxWidth(), align = TextAlign.Center)
         val scroll = rememberScrollState()
         val holder = remember { ScreenScroll(scroll) }
         androidx.compose.runtime.CompositionLocalProvider(LocalScreenScroll provides holder) {
@@ -296,17 +296,17 @@ fun Review(
       }
     }
     "delete" -> ConfirmDialog(
-      if (targets.size > 1) "Delete ${targets.size} pages?" else "Delete this page?", "This removes the page from the scan. It can't be undone.", "Delete",
+      if (targets.size > 1) "Xóa ${targets.size} trang?" else "Xóa trang này?", "Trang sẽ bị xóa khỏi bản quét. Không thể hoàn tác.", "Xóa",
       danger = true, onDismiss = { modal = "" }, onConfirm = removePages,
     )
     "reset" -> ConfirmDialog(
-      if (targets.size > 1) "Reset ${targets.size} pages?" else "Reset this page?",
-      "Crop goes back to the detected edges, and rotation, filter, brightness, contrast, cleanup and markup are cleared.", "Reset", onDismiss = { modal = "" },
+      if (targets.size > 1) "Đặt lại ${targets.size} trang?" else "Đặt lại trang này?",
+      "Vùng cắt trở về cạnh đã phát hiện, còn xoay, bộ lọc, độ sáng, độ tương phản, làm sạch và chú thích đều bị xóa.", "Đặt lại", onDismiss = { modal = "" },
     ) {
       editShots(targets) { sh, p -> sh.withDefaults(p.kind, sh.detected) }
       selected = emptyList()
     }
-    "rename" -> PromptDialog("Rename scan", doc.name, onClose = { modal = "" }) { name -> setDoc { it.copy(name = name) } }
+    "rename" -> PromptDialog("Đổi tên bản quét", doc.name, onClose = { modal = "" }) { name -> setDoc { it.copy(name = name) } }
   }
 }
 
@@ -358,7 +358,7 @@ private fun ApplyAll(key: Any, onClick: () -> Unit) {
   var done by remember(key) { mutableStateOf(false) }
   val bg by animateColorAsState(if (done) ScanUi.accent else ScanUi.raised, label = "applied")
   T(
-    if (done) "Applied to all pages" else "Apply to all pages", Type.med.copy(fontSize = 13.sp), if (done) ScanUi.onAccent else ScanUi.accent,
+    if (done) "Đã áp dụng cho mọi trang" else "Áp dụng cho mọi trang", Type.med.copy(fontSize = 13.sp), if (done) ScanUi.onAccent else ScanUi.accent,
     Modifier.tap(shape = CircleShape, scaleTo = 0.94f) { onClick(); done = true }.background(bg, CircleShape).padding(horizontal = 14.dp, vertical = 8.dp),
   )
 }
@@ -381,14 +381,14 @@ private fun FiltersSheet(shot: Shot, all: Boolean, onPick: (String) -> Unit, onT
     }
   }
   Column {
-    SheetHead("Filters") {
+    SheetHead("Bộ lọc") {
       Row(Modifier.tap(scaleTo = 0.95f, onClick = onToggleAll), verticalAlignment = Alignment.CenterVertically) {
         Box(
           Modifier.size(20.dp).background(if (all) ScanUi.accent else Color.Transparent, RoundedCornerShape(5.dp)).border(2.dp, if (all) ScanUi.accent else ScanUi.dim, RoundedCornerShape(5.dp)),
           contentAlignment = Alignment.Center,
         ) { if (all) Icon(I.check, 14.dp, ScanUi.onAccent) }
         Spacer(Modifier.size(8.dp))
-        T("Apply to all pages", Type.med.copy(fontSize = 13.sp), if (all) ScanUi.accent else ScanUi.text)
+        T("Áp dụng cho mọi trang", Type.med.copy(fontSize = 13.sp), if (all) ScanUi.accent else ScanUi.text)
       }
     }
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -410,11 +410,11 @@ private fun FiltersSheet(shot: Shot, all: Boolean, onPick: (String) -> Unit, onT
 @Composable
 private fun AdjustSheet(shot: Shot, onCommit: (Float, Float) -> Unit, onApplyAll: () -> Unit) {
   Column(Modifier.padding(horizontal = 20.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    ScanSlider("Brightness", shot.brightness) { onCommit(it, shot.contrast) }
-    ScanSlider("Contrast", shot.contrast) { onCommit(shot.brightness, it) }
+    ScanSlider("Độ sáng", shot.brightness) { onCommit(it, shot.contrast) }
+    ScanSlider("Độ tương phản", shot.contrast) { onCommit(shot.brightness, it) }
     Row(verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.weight(1f)) { ApplyAll("${shot.brightness},${shot.contrast}", onApplyAll) }
-      T("Reset", Type.bold, ScanUi.accent, Modifier.tap { onCommit(0f, 0f) }.padding(8.dp))
+      T("Đặt lại", Type.bold, ScanUi.accent, Modifier.tap { onCommit(0f, 0f) }.padding(8.dp))
     }
   }
 }
@@ -486,7 +486,7 @@ private fun CropEditor(page: ScanPage, onCancel: () -> Unit, onDone: (List<List<
   val setSide = { cs: List<Float>? -> all = all.mapIndexed { i, x -> if (i == side) cs ?: FULL_CORNERS else x } }
   FullSheet(onCancel, ScanUi.bg) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-      EditorBar("Crop", onCancel) {
+      EditorBar("Cắt", onCancel) {
         onDone(all.mapIndexed { i, cs -> if (same(cs, FULL_CORNERS)) null else if (same(cs, page.shots[i].corners)) page.shots[i].corners else cs })
       }
       if (page.shots.size > 1) SideTabs(side) { side = it }
@@ -558,9 +558,9 @@ private fun CropEditor(page: ScanPage, onCancel: () -> Unit, onDone: (List<List<
         }
       }
       Row(Modifier.fillMaxWidth().background(ScanUi.panel).padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceAround) {
-        EditorAction(I.autoFix, "Auto-detect", shot.detected != null) { setSide(shot.detected) }
-        EditorAction(I.fullscreen, "No crop") { setSide(null) }
-        EditorAction(I.restore, "Reset") { setSide(shot.corners) }
+        EditorAction(I.autoFix, "Tự nhận diện", shot.detected != null) { setSide(shot.detected) }
+        EditorAction(I.fullscreen, "Không cắt") { setSide(null) }
+        EditorAction(I.restore, "Đặt lại") { setSide(shot.corners) }
       }
     }
   }
@@ -569,9 +569,9 @@ private fun CropEditor(page: ScanPage, onCancel: () -> Unit, onDone: (List<List<
 @Composable
 private fun EditorBar(title: String, onCancel: () -> Unit, onDone: () -> Unit) {
   Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-    T("Cancel", Type.item, ScanUi.text, Modifier.tap(onClick = onCancel).padding(14.dp))
+    T("Hủy", Type.item, ScanUi.text, Modifier.tap(onClick = onCancel).padding(14.dp))
     T(title, Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center)
-    T("Done", Type.bold.copy(fontSize = 15.sp), ScanUi.accent, Modifier.tap(onClick = onDone).padding(14.dp))
+    T("Xong", Type.bold.copy(fontSize = 15.sp), ScanUi.accent, Modifier.tap(onClick = onDone).padding(14.dp))
   }
 }
 
@@ -579,7 +579,7 @@ private fun EditorBar(title: String, onCancel: () -> Unit, onDone: () -> Unit) {
 private fun SideTabs(side: Int, onPick: (Int) -> Unit) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Row(Modifier.background(ScanUi.raised, CircleShape).padding(3.dp)) {
-      listOf("Front", "Back").forEachIndexed { i, label ->
+      listOf("Mặt trước", "Mặt sau").forEachIndexed { i, label ->
         val bg by animateColorAsState(if (side == i) ScanUi.accent else Color.Transparent, label = "side")
         T(label, Type.med, if (side == i) ScanUi.onAccent else ScanUi.dim, Modifier.tap(scaleTo = 0.94f) { onPick(i) }.background(bg, CircleShape).padding(horizontal = 20.dp, vertical = 6.dp))
       }
@@ -605,8 +605,8 @@ private fun EditorAction(glyph: Int, label: String, enabled: Boolean = true, onC
 private data class DrawTool(val shape: String, val glyph: Int, val label: String)
 
 private val DRAW_TOOLS = mapOf(
-  "cleanup" to listOf(DrawTool("path", I.brush, "Brush"), DrawTool("fill", I.rectangle, "Area")),
-  "markup" to listOf(DrawTool("path", I.draw, "Pen"), DrawTool("rect", I.rectangleOutline, "Rectangle"), DrawTool("ellipse", I.ellipseOutline, "Ellipse")),
+  "cleanup" to listOf(DrawTool("path", I.brush, "Cọ"), DrawTool("fill", I.rectangle, "Vùng")),
+  "markup" to listOf(DrawTool("path", I.draw, "Bút"), DrawTool("rect", I.rectangleOutline, "Hình chữ nhật"), DrawTool("ellipse", I.ellipseOutline, "Hình elip")),
 )
 private val DRAW_SIZES = mapOf("cleanup" to listOf(0.02f, 0.04f, 0.08f), "markup" to listOf(0.004f, 0.008f, 0.016f))
 private val MARKUP_COLORS = listOf("#111111", "#1473E6", "#D7373F", "#12805C", "#E68619", "#FFFFFF")
@@ -644,12 +644,12 @@ private fun DrawEditor(page: ScanPage, mode: String, onCancel: () -> Unit, onDon
 
   FullSheet(onCancel, ScanUi.bg) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-      EditorBar(if (mode == "cleanup") "Cleanup" else "Markup", onCancel) { onDone(all) }
+      EditorBar(if (mode == "cleanup") "Làm sạch" else "Chú thích", onCancel) { onDone(all) }
       Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) { if (page.shots.size > 1) SideTabs(side) { side = it } }
-        SmallAction(I.undo, "Undo", all[side].isNotEmpty()) { all = all.mapIndexed { i, l -> if (i == side) l.dropLast(1) else l } }
+        SmallAction(I.undo, "Hoàn tác", all[side].isNotEmpty()) { all = all.mapIndexed { i, l -> if (i == side) l.dropLast(1) else l } }
         Spacer(Modifier.size(4.dp))
-        SmallAction(I.deleteSweepOutline, "Clear", all[side].isNotEmpty()) { all = all.mapIndexed { i, l -> if (i == side) emptyList() else l } }
+        SmallAction(I.deleteSweepOutline, "Xóa hết", all[side].isNotEmpty()) { all = all.mapIndexed { i, l -> if (i == side) emptyList() else l } }
       }
       BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
         val b = base
@@ -708,7 +708,7 @@ private fun DrawEditor(page: ScanPage, mode: String, onCancel: () -> Unit, onDon
           Box(Modifier.size(0.6.dp, 26.dp).background(ScanUi.line))
           DRAW_SIZES.getValue(mode).indices.forEach { i ->
             Box(
-              Modifier.size(38.dp).tap(shape = CircleShape, scaleTo = 0.9f, label = "Size ${i + 1}") { size = i }.background(ScanUi.raised, CircleShape)
+              Modifier.size(38.dp).tap(shape = CircleShape, scaleTo = 0.9f, label = "Cỡ ${i + 1}") { size = i }.background(ScanUi.raised, CircleShape)
                 .border(2.dp, if (size == i) ScanUi.accent else Color.Transparent, CircleShape),
               contentAlignment = Alignment.Center,
             ) { Box(Modifier.size((6 + i * 6).dp).background(ScanUi.text, CircleShape)) }
@@ -717,18 +717,18 @@ private fun DrawEditor(page: ScanPage, mode: String, onCancel: () -> Unit, onDon
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
           swatches.forEach { sw ->
             Box(
-              Modifier.tap(shape = CircleShape, scaleTo = 0.88f, label = if (sw == "auto") "Paper color" else sw) { color = sw }
+              Modifier.tap(shape = CircleShape, scaleTo = 0.88f, label = if (sw == "auto") "Màu giấy" else sw) { color = sw }
                 .border(2.dp, if (color == sw) ScanUi.accent else Color.Transparent, CircleShape).padding(3.dp),
             ) {
               Box(
                 Modifier.size(30.dp).background(hexToColor(if (sw == "auto") base?.bg ?: "#FFFFFF" else sw), CircleShape).border(1.dp, ScanUi.line, CircleShape),
                 contentAlignment = Alignment.Center,
-              ) { if (sw == "auto") T("Auto", Type.label.copy(fontSize = 8.5.sp), Color(0xFF333333)) }
+              ) { if (sw == "auto") T("Tự động", Type.label.copy(fontSize = 8.5.sp), Color(0xFF333333)) }
             }
           }
           val custom = color !in swatches
           Box(
-            Modifier.tap(shape = CircleShape, scaleTo = 0.88f, label = "Choose a color") {
+            Modifier.tap(shape = CircleShape, scaleTo = 0.88f, label = "Chọn màu") {
               picking = !picking
               if (picking && !custom) setColor(shadeOf(hue, shade))
             }.border(2.dp, if (custom) ScanUi.accent else Color.Transparent, CircleShape).padding(3.dp),
@@ -739,13 +739,13 @@ private fun DrawEditor(page: ScanPage, mode: String, onCancel: () -> Unit, onDon
             }
           }
           Box(
-            Modifier.size(36.dp).tap(shape = CircleShape, scaleTo = 0.88f, label = "Pick a color from the page") { sampling = !sampling }
+            Modifier.size(36.dp).tap(shape = CircleShape, scaleTo = 0.88f, label = "Lấy màu từ trang") { sampling = !sampling }
               .background(if (sampling) ScanUi.accent else ScanUi.raised, CircleShape),
             contentAlignment = Alignment.Center,
           ) { Icon(I.eyedropper, 18.dp, if (sampling) ScanUi.onAccent else Color.White) }
           val hint = when {
-            sampling -> "Tap the page to use its color."
-            mode == "cleanup" -> "Paint over stains, fingers or marks. Auto uses the paper color."
+            sampling -> "Chạm vào trang để lấy màu."
+            mode == "cleanup" -> "Tô lên vết bẩn, ngón tay hoặc vết đánh dấu. Tự động dùng màu giấy."
             else -> null
           }
           if (hint != null) T(hint, Type.small.copy(fontSize = 12.sp), if (sampling) ScanUi.accent else ScanUi.dim, Modifier.padding(start = 6.dp))

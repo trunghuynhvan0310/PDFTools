@@ -48,7 +48,7 @@ fun cleanName(s: String) = s.replace(BAD, "_").trim()
 fun rootFolder(): File = File(appContext.filesDir, "PDF Tools").apply { mkdirs() }
 
 fun createFolder(name: String): Folder {
-  val clean = cleanName(name).ifEmpty { "New Folder" }
+  val clean = cleanName(name).ifEmpty { "Thư mục mới" }
   var d = File(rootFolder(), clean)
   var i = 2
   while (d.exists()) d = File(rootFolder(), "$clean (${i++})")
@@ -275,10 +275,10 @@ suspend fun saveToDevice(f: Saved): String {
   val cr = appContext.contentResolver
   val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
   withContext(Dispatchers.IO) {
-    val doc = DocumentsContract.createDocument(cr, parent, mimeOf(f.name), f.name) ?: error("Couldn't save there. Pick another folder.")
+    val doc = DocumentsContract.createDocument(cr, parent, mimeOf(f.name), f.name) ?: error("Không lưu được ở đó. Hãy chọn thư mục khác.")
     cr.openOutputStream(doc)?.use { out -> File(f.path).inputStream().use { it.copyTo(out) } }
   }
-  return Uri.decode(tree.toString()).split('/', ':').lastOrNull { it.isNotEmpty() } ?: "your folder" // …/tree/primary:Download -> Download
+  return Uri.decode(tree.toString()).split('/', ':').lastOrNull { it.isNotEmpty() } ?: "thư mục của bạn" // …/tree/primary:Download -> Download
 }
 
 /** Save as Word doc / Save as JPEG: converted, then moved in next to the PDF (not synced: Drive sync is PDFs only). */

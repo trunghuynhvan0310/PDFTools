@@ -54,9 +54,9 @@ typealias Box = List<Float>
 fun loadPdf(bytes: ByteArray): PDDocument = try {
   PDDocument.load(bytes)
 } catch (_: InvalidPasswordException) {
-  fail("This PDF is password-protected. Unlock it first.")
+  fail("PDF này có mật khẩu. Hãy mở khóa trước.")
 } catch (_: Exception) {
-  fail("Could not read this PDF. The file may be damaged.")
+  fail("Không đọc được PDF này. Tệp có thể bị hỏng.")
 }
 
 fun PDDocument.bytes(): ByteArray = ByteArrayOutputStream().use { save(it); it.toByteArray() }
@@ -78,12 +78,12 @@ private fun pick(src: PDDocument, indices: List<Int>): ByteArray = PDDocument().
 // "1-3, 5, 8-" -> [[0,1,2],[4],[7..n-1]]
 fun parseRanges(str: String, n: Int): List<List<Int>> {
   val parts = str.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-  if (parts.isEmpty()) fail("Enter page ranges, e.g. 1-3, 5")
+  if (parts.isEmpty()) fail("Nhập khoảng trang, ví dụ 1-3, 5")
   return parts.map { part ->
     val ab = part.split('-').map { it.trim() }
     val start = max(1, ab[0].toIntOrNull() ?: 1)
     val end = min(n, if (ab.size < 2) start else ab[1].toIntOrNull() ?: n)
-    if (start > end) fail("\"$part\" is outside pages 1–$n")
+    if (start > end) fail("\"$part\" nằm ngoài các trang 1–$n")
     (start - 1 until end).toList()
   }
 }
@@ -172,7 +172,7 @@ private val SIZE_STEPS = listOf(80 to 0, 60 to 2400, 45 to 2000, 35 to 1600, 25 
  */
 fun compressToSize(bytes: ByteArray, targetMB: String): ByteArray {
   val target = ((targetMB.toFloatOrNull() ?: 0f) * 1024 * 1024).toLong()
-  if (target <= 0) fail("Enter the size to fit under, in MB.")
+  if (target <= 0) fail("Nhập dung lượng tối đa, tính bằng MB.")
   if (bytes.size <= target) return compress(bytes, 80) // already fits: only the lossless tidy-up
   var best = bytes
   for ((q, side) in SIZE_STEPS) {
@@ -212,14 +212,14 @@ fun writeDetails(bytes: ByteArray, title: String, author: String, subject: Strin
 
 fun split(bytes: ByteArray, mode: String, ranges: String): List<Named> = loadPdf(bytes).use { src ->
   val groups = if (mode == "ranges") parseRanges(ranges, src.numberOfPages) else (0 until src.numberOfPages).map { listOf(it) }
-  groups.map { g -> Named(if (g.size > 1) "pages-${g.first() + 1}-${g.last() + 1}" else "page-${g.first() + 1}", pick(src, g)) }
+  groups.map { g -> Named(if (g.size > 1) "trang-${g.first() + 1}-${g.last() + 1}" else "trang-${g.first() + 1}", pick(src, g)) }
 }
 
 private fun norm(s: String) = s.lowercase().replace(Regex("\\s+"), "")
 
 fun splitByText(bytes: ByteArray, phrase: String): List<Named> {
   val needle = norm(phrase)
-  if (needle.isEmpty()) fail("Enter the phrase to split at.")
+  if (needle.isEmpty()) fail("Nhập cụm từ để tách tại đó.")
   return loadPdf(bytes).use { src ->
     val stripper = PDFTextStripper()
     val groups = ArrayList<MutableList<Int>>()
@@ -232,8 +232,8 @@ fun splitByText(bytes: ByteArray, phrase: String): List<Named> {
       if (groups.isEmpty() || (hit && groups.last().isNotEmpty())) groups.add(mutableListOf())
       groups.last().add(i)
     }
-    if (hits == 0) fail("\"$phrase\" wasn't found on any page. If this is a scan, run OCR Scanned PDF on it first.")
-    groups.mapIndexed { k, g -> Named("part-${k + 1}", pick(src, g)) }
+    if (hits == 0) fail("Không tìm thấy \"$phrase\" ở trang nào. Nếu đây là bản quét, hãy chạy OCR cho PDF này trước.")
+    groups.mapIndexed { k, g -> Named("phan-${k + 1}", pick(src, g)) }
   }
 }
 
@@ -245,12 +245,12 @@ fun splitByBookmarks(bytes: ByteArray): List<Named> = loadPdf(bytes).use { src -
   while (item != null && guard++ < 10000) {
     val page = runCatching { item.findDestinationPage(src) }.getOrNull()
     val i = page?.let { src.pages.indexOf(it) } ?: -1
-    if (i >= 0) marks.add((item.title?.takeIf { it.isNotBlank() } ?: "Section ${marks.size + 1}") to i)
+    if (i >= 0) marks.add((item.title?.takeIf { it.isNotBlank() } ?: "Phan ${marks.size + 1}") to i)
     item = item.nextSibling
   }
-  if (marks.isEmpty()) fail("This PDF has no bookmarks to split by.")
+  if (marks.isEmpty()) fail("PDF này không có dấu trang để tách.")
   marks.sortBy { it.second }
-  if (marks[0].second > 0) marks.add(0, "Front matter" to 0)
+  if (marks[0].second > 0) marks.add(0, "Mo dau" to 0)
   val uniq = marks.filterIndexed { i, m -> i == 0 || m.second != marks[i - 1].second }
   uniq.mapIndexed { i, (title, page) -> Named(title, pick(src, (page until (uniq.getOrNull(i + 1)?.second ?: n)).toList())) }
 }
@@ -270,9 +270,9 @@ fun unrotate(b: Box, rot: Int): Box {
 fun splitHalf(bytes: ByteArray, mode: String): List<Named> = loadPdf(bytes).use { src ->
   val n = src.numberOfPages
   if (mode == "file") {
-    if (n < 2) fail("Need at least 2 pages to split in half.")
+    if (n < 2) fail("Cần ít nhất 2 trang để tách đôi.")
     val h = (n + 1) / 2
-    return@use listOf(Named("first-half", pick(src, (0 until h).toList())), Named("second-half", pick(src, (h until n).toList())))
+    return@use listOf(Named("nua-dau", pick(src, (0 until h).toList())), Named("nua-sau", pick(src, (h until n).toList())))
   }
   // Halves of the page as displayed (left then right, or top then bottom), turned back into the page as stored, so a
   // spread saved sideways with /Rotate still splits into its two pages.
@@ -296,7 +296,7 @@ fun splitHalf(bytes: ByteArray, mode: String): List<Named> = loadPdf(bytes).use 
 
 fun splitBySize(bytes: ByteArray, maxMB: String): List<Named> {
   val limit = (maxMB.toFloatOrNull() ?: 0f) * 1024 * 1024
-  if (limit <= 0f) fail("Enter a size limit in MB.")
+  if (limit <= 0f) fail("Nhập giới hạn dung lượng, tính bằng MB.")
   return loadPdf(bytes).use { src ->
     val parts = ArrayList<ByteArray>()
     var cur = mutableListOf<Int>()
@@ -314,7 +314,7 @@ fun splitBySize(bytes: ByteArray, maxMB: String): List<Named> {
       }
     }
     last?.let { parts.add(it) }
-    parts.mapIndexed { k, b -> Named("part-${k + 1}", b) }
+    parts.mapIndexed { k, b -> Named("phan-${k + 1}", b) }
   }
 }
 
@@ -380,7 +380,7 @@ fun flip(bytes: ByteArray, axis: String): ByteArray = loadPdf(bytes).use { src -
 private val GRID = mapOf("2" to (2 to 1), "4" to (2 to 2), "6" to (2 to 3), "9" to (3 to 3), "16" to (4 to 4))
 
 fun nUp(bytes: ByteArray, perSheet: String, lines: Boolean): ByteArray {
-  val (c0, r0) = GRID[perSheet] ?: fail("Choose 2, 4, 6, 9 or 16 pages per sheet.")
+  val (c0, r0) = GRID[perSheet] ?: fail("Chọn 2, 4, 6, 9 hoặc 16 trang mỗi tờ.")
   return loadPdf(bytes).use { src ->
     PDDocument().use { out ->
       val shown = src.pages.map { out.embedShown(it) }
@@ -430,12 +430,12 @@ fun nUp(bytes: ByteArray, perSheet: String, lines: Boolean): ByteArray {
 // What to keep on a page, as fractions of the page as it is displayed, y from the top. Keyed by page index.
 fun cropResize(bytes: ByteArray, mode: String, size: String, boxes: Map<String, Box>): ByteArray = loadPdf(bytes).use { src ->
   if (mode == "crop") {
-    if (boxes.isEmpty()) fail("Pull a page’s corners in, or tap Auto crop, to choose what to keep.")
+    if (boxes.isEmpty()) fail("Kéo các góc của trang vào, hoặc chạm Tự động cắt, để chọn phần giữ lại.")
     src.pages.forEachIndexed { i, p ->
       val box = boxes[i.toString()] ?: return@forEachIndexed // pages you didn't crop are left at their full size
       val cb = p.cropBox
       val (x, y, w, h) = unrotate(box, p.rot)
-      if (w * cb.width < 1 || h * cb.height < 1) fail("The crop on page ${i + 1} is too small.")
+      if (w * cb.width < 1 || h * cb.height < 1) fail("Vùng cắt ở trang ${i + 1} quá nhỏ.")
       p.cropBox = PDRectangle(cb.lowerLeftX + x * cb.width, cb.lowerLeftY + y * cb.height, w * cb.width, h * cb.height)
     }
     return@use src.bytes()
@@ -483,9 +483,9 @@ private fun PDPageContentStream.putText(font: PDType1Font, size: Float, text: St
 }
 
 fun watermark(bytes: ByteArray, typed: String, opacity: Float, scale: Float): ByteArray {
-  if (typed.isBlank()) fail("Enter watermark text.")
+  if (typed.isBlank()) fail("Nhập chữ cho hình mờ.")
   val text = winAnsi(typed).trim()
-  if (text.isEmpty()) fail("Watermarks can only use Latin letters, numbers and common symbols.")
+  if (text.isEmpty()) fail("Hình mờ chỉ dùng được chữ cái Latin không dấu, số và ký hiệu thông dụng.")
   return loadPdf(bytes).use { doc ->
     val font = PDType1Font.HELVETICA_BOLD
     for (p in doc.pages) {
@@ -533,7 +533,7 @@ fun pageNumbers(bytes: ByteArray, position: String, format: String): ByteArray =
   val font = PDType1Font.HELVETICA
   val n = doc.numberOfPages
   doc.pages.forEachIndexed { i, p ->
-    val label = if (format == "of") "Page ${i + 1} of $n" else "${i + 1}"
+    val label = if (format == "of") "Trang ${i + 1}/$n" else "${i + 1}"
     val tw = font.getStringWidth(label) / 1000f * 10
     // Placed on the page as displayed, so a page saved sideways with /Rotate still gets its number upright at the
     // bottom: the baseline 20pt up, 28pt in from the side.
@@ -555,7 +555,7 @@ data class PageOrder(val i: Int, val rot: Int = 0, val del: Boolean = false) // 
 
 fun organize(bytes: ByteArray, all: List<PageOrder>): ByteArray {
   val order = all.filter { !it.del }
-  if (order.isEmpty()) fail("Keep at least one page.")
+  if (order.isEmpty()) fail("Hãy giữ lại ít nhất một trang.")
   return loadPdf(bytes).use { src ->
     PDDocument().use { out ->
       for (o in order) out.adopt(src.getPage(o.i)).let { it.rotation = (it.rotation + o.rot) % 360 }
@@ -628,9 +628,9 @@ fun fillSign(bytes: ByteArray, items: List<SignItem>, images: Map<String, ByteAr
         val b = images[it.uri] ?: return@run null
         when {
           b.size > 1 && b[0] == 0x89.toByte() ->
-            LosslessFactory.createFromImage(doc, BitmapFactory.decodeByteArray(b, 0, b.size) ?: fail("Could not read the picture on page ${it.page + 1}."))
+            LosslessFactory.createFromImage(doc, BitmapFactory.decodeByteArray(b, 0, b.size) ?: fail("Không đọc được ảnh ở trang ${it.page + 1}."))
           b.size > 1 && b[0] == 0xFF.toByte() && b[1] == 0xD8.toByte() -> JPEGFactory.createFromByteArray(doc, b)
-          else -> fail("The picture on page ${it.page + 1} isn't a JPEG or PNG. Pick a different one.")
+          else -> fail("Ảnh ở trang ${it.page + 1} không phải JPEG hay PNG. Hãy chọn ảnh khác.")
         }.also { x -> embedded[it.uri] = x }
       } ?: continue
       val w = it.w * dw

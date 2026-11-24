@@ -140,7 +140,7 @@ fun Scanner(id: String?) {
       back()
       saved.pdf?.let { openFile(it.path, it.name) }
     } catch (e: Exception) {
-      failure = e.message ?: "Something went wrong."
+      failure = e.message ?: "Đã xảy ra lỗi."
     }
   }
 
@@ -171,30 +171,30 @@ fun Scanner(id: String?) {
 
   if (asking) {
     AppDialog(
-      { asking = false }, if (doc.saved != null) "Save your changes?" else "Save this scan?",
-      if (doc.saved != null) "You edited this scan after saving the PDF." else "${plural(doc.pages.size, "page")}, not saved as a PDF yet.",
+      { asking = false }, if (doc.saved != null) "Lưu thay đổi?" else "Lưu bản quét này?",
+      if (doc.saved != null) "Bạn đã sửa bản quét này sau khi lưu PDF." else "${plural(doc.pages.size, "page")}, chưa lưu thành PDF.",
     ) {
       Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (doc.pages.isNotEmpty()) Btn(if (doc.saved != null) "Update PDF" else "Save PDF", Modifier.fillMaxWidth(), I.filePdfBox, busy = saving) {
+        if (doc.pages.isNotEmpty()) Btn(if (doc.saved != null) "Cập nhật PDF" else "Lưu PDF", Modifier.fillMaxWidth(), I.filePdfBox, busy = saving) {
           scope.launch { saving = true; save(); saving = false; asking = false }
         }
-        Btn("Keep as draft", Modifier.fillMaxWidth(), I.contentSaveOutline, BtnKind.Secondary) { saveDoc(doc); asking = false; back() }
-        Btn(if (doc.saved != null) "Discard changes" else "Discard scan", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { discardChanges(doc); asking = false; back() }
-        T("Drafts stay in Scan → Recent scans, even after closing the app.", Type.small, c.sub, Modifier.fillMaxWidth(), align = TextAlign.Center)
+        Btn("Giữ làm bản nháp", Modifier.fillMaxWidth(), I.contentSaveOutline, BtnKind.Secondary) { saveDoc(doc); asking = false; back() }
+        Btn(if (doc.saved != null) "Bỏ thay đổi" else "Bỏ bản quét", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { discardChanges(doc); asking = false; back() }
+        T("Bản nháp được giữ trong Quét → Bản quét gần đây, kể cả sau khi đóng ứng dụng.", Type.small, c.sub, Modifier.fillMaxWidth(), align = TextAlign.Center)
       }
     }
   }
   draft?.let { d ->
-    AppDialog({ draft = null }, "Continue your unsaved scan?", "${d.name} · ${plural(d.pages.size, "page")}") {
+    AppDialog({ draft = null }, "Tiếp tục bản quét chưa lưu?", "${d.name} · ${plural(d.pages.size, "page")}") {
       Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Btn("Continue editing", Modifier.fillMaxWidth(), I.fileDocumentEditOutline) { doc = d; capture = false; draft = null }
-        Btn("Start a new scan", Modifier.fillMaxWidth(), I.cameraOutline, BtnKind.Secondary) { draft = null }
-        Btn(if (d.saved != null) "Discard its changes" else "Discard it", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { discardChanges(d); draft = null }
+        Btn("Tiếp tục chỉnh sửa", Modifier.fillMaxWidth(), I.fileDocumentEditOutline) { doc = d; capture = false; draft = null }
+        Btn("Bắt đầu bản quét mới", Modifier.fillMaxWidth(), I.cameraOutline, BtnKind.Secondary) { draft = null }
+        Btn(if (d.saved != null) "Bỏ thay đổi của nó" else "Bỏ nó", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { discardChanges(d); draft = null }
       }
     }
   }
   if (failure.isNotEmpty()) {
-    AppDialog({ failure = "" }, "Couldn’t save the PDF", failure) { Btn("OK", Modifier.fillMaxWidth().padding(top = 18.dp), kind = BtnKind.Secondary) { failure = "" } }
+    AppDialog({ failure = "" }, "Không lưu được PDF", failure) { Btn("OK", Modifier.fillMaxWidth().padding(top = 18.dp), kind = BtnKind.Secondary) { failure = "" } }
   }
 }
 
@@ -347,34 +347,34 @@ private fun Capture(
   }
 
   val status = when {
-    !detecting -> "Fit the whole whiteboard in the frame"
-    busy -> "Capturing…"
-    kind == "id" -> if (front != null) "Turn the card over and capture the back" else "Capture the front of the card"
-    !auto -> "Line up the page and tap the shutter"
-    steady -> "Capturing… hold steady"
-    lost -> "No document found. Capture manually."
-    corners != null -> "Hold steady"
-    else -> "Looking for document"
+    !detecting -> "Đưa toàn bộ bảng trắng vào khung"
+    busy -> "Đang chụp…"
+    kind == "id" -> if (front != null) "Lật thẻ lại và chụp mặt sau" else "Chụp mặt trước của thẻ"
+    !auto -> "Căn trang vào khung rồi chạm nút chụp"
+    steady -> "Đang chụp… giữ yên"
+    lost -> "Không thấy tài liệu. Hãy chụp thủ công."
+    corners != null -> "Giữ yên"
+    else -> "Đang tìm tài liệu"
   }
 
   Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
     Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-      Tap(I.close, "Close", onClick = if (doc.pages.isNotEmpty()) onReview else onClose)
-      if (retake != null) T("Retake page", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center) else Spacer(Modifier.weight(1f))
-      if (retake == null && doc.pages.isEmpty()) Tap(I.history, "Recent scans", onClick = onRecent)
+      Tap(I.close, "Đóng", onClick = if (doc.pages.isNotEmpty()) onReview else onClose)
+      if (retake != null) T("Chụp lại trang", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center) else Spacer(Modifier.weight(1f))
+      if (retake == null && doc.pages.isEmpty()) Tap(I.history, "Bản quét gần đây", onClick = onRecent)
       // Flash stays in its place whatever the lens, so nothing shifts when flipping: front lenses have no flash on most
       // phones, so there it's dimmed and off.
       val (next, glyph) = when (flash) { "off" -> "auto" to I.flashOff; "auto" -> "on" to I.flashAuto; else -> "off" to I.flash }
       Box(Modifier.graphicsLayer { alpha = if (selfie) 0.35f else 1f }) {
-        Tap(if (selfie) I.flashOff else glyph, if (selfie) "No flash on the front camera" else "Flash $flash") { if (!selfie) flash = next }
+        Tap(if (selfie) I.flashOff else glyph, if (selfie) "Camera trước không có đèn flash" else "Đèn flash: ${when (flash) { "auto" -> "tự động"; "on" -> "bật"; else -> "tắt" }}") { if (!selfie) flash = next }
       }
-      if (hasFrontLens) Tap(I.cameraFlipOutline, if (selfie) "Switch to back camera" else "Switch to front camera") { selfie = !selfie }
+      if (hasFrontLens) Tap(I.cameraFlipOutline, if (selfie) "Chuyển sang camera sau" else "Chuyển sang camera trước") { selfie = !selfie }
       if (detecting) {
         val tint by animateColorAsState(if (auto) ScanUi.accent else ScanUi.text, label = "auto")
         Row(Modifier.tap(scaleTo = 0.92f) { auto = !auto }.padding(horizontal = 10.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
           Icon(if (auto) I.cameraIris else I.gestureTap, 20.dp, tint)
           Spacer(Modifier.size(4.dp))
-          T(if (auto) "Auto" else "Manual", Type.med, tint)
+          T(if (auto) "Tự động" else "Thủ công", Type.med, tint)
         }
       }
     }
@@ -401,9 +401,9 @@ private fun Capture(
         } else {
           Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(I.cameraOffOutline, 36.dp, ScanUi.dim)
-            T("Allow camera access to scan documents.", Type.item, ScanUi.text, Modifier.padding(vertical = 12.dp), align = TextAlign.Center)
+            T("Cho phép truy cập camera để quét tài liệu.", Type.item, ScanUi.text, Modifier.padding(vertical = 12.dp), align = TextAlign.Center)
             T(
-              if (denied) "Open Settings" else "Allow camera", Type.bold, ScanUi.onAccent,
+              if (denied) "Mở Cài đặt" else "Cho phép camera", Type.bold, ScanUi.onAccent,
               Modifier.tap(shape = CircleShape) {
                 if (denied) context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                 else scope.launch { granted = runCatching { awaitResult(ActivityResultContracts.RequestPermission(), Manifest.permission.CAMERA) }.getOrDefault(false); denied = !granted }
@@ -422,13 +422,13 @@ private fun Capture(
             val img = rememberBitmap(front?.src, 200)
             Box(Modifier.size(56.dp, 40.dp).clip(RoundedCornerShape(4.dp)).background(ScanUi.raised)) { if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-              T("Front captured", Type.bold, ScanUi.text)
-              T("Now capture the back", Type.small, ScanUi.dim)
+              T("Đã chụp mặt trước", Type.bold, ScanUi.text)
+              T("Giờ chụp mặt sau", Type.small, ScanUi.dim)
             }
             Row(Modifier.tap(shape = CircleShape) { front = null }.background(ScanUi.raised, CircleShape).padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
               Icon(I.cameraRetakeOutline, 16.dp, ScanUi.text)
               Spacer(Modifier.size(5.dp))
-              T("Retake", Type.med, ScanUi.text)
+              T("Chụp lại", Type.med, ScanUi.text)
             }
           }
         }
@@ -438,7 +438,7 @@ private fun Capture(
           Row(Modifier.padding(12.dp).fillMaxWidth().background(Color.White, RoundedCornerShape(Radius.control)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(I.qrcode, 22.dp, ScanUi.accent)
             T(qr, Type.med, Color(0xFF111111), Modifier.weight(1f).padding(horizontal = 10.dp), maxLines = 2)
-            T(if (link) "Open" else "Share", Type.bold, ScanUi.accent, Modifier.tap { if (link) openUrl(qr) else shareText(qr) })
+            T(if (link) "Mở" else "Chia sẻ", Type.bold, ScanUi.accent, Modifier.tap { if (link) openUrl(qr) else shareText(qr) })
             Spacer(Modifier.size(10.dp))
             Box(Modifier.tap(scaleTo = 0.85f) { qr = "" }) { Icon(I.close, 18.dp, Color(0xFF555555)) }
           }
@@ -464,14 +464,14 @@ private fun Capture(
     }
 
     Row(Modifier.fillMaxWidth().height(110.dp).padding(bottom = 6.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-      Tap(I.imageMultipleOutline, "Import from gallery", 28, onClick = importPhotos)
+      Tap(I.imageMultipleOutline, "Nhập từ thư viện ảnh", 28, onClick = importPhotos)
       val inner by animateColorAsState(if (steady) ScanUi.accent else Color.White, label = "shutter")
       Box(
-        Modifier.size(78.dp).tap(enabled = !busy && granted, shape = CircleShape, scaleTo = 0.9f, label = "Capture", onClick = shoot).border(4.dp, Color.White, CircleShape),
+        Modifier.size(78.dp).tap(enabled = !busy && granted, shape = CircleShape, scaleTo = 0.9f, label = "Chụp", onClick = shoot).border(4.dp, Color.White, CircleShape),
         contentAlignment = Alignment.Center,
       ) { if (busy) Spinner(ScanUi.accent) else Box(Modifier.size(62.dp).background(inner, CircleShape)) }
       val last = doc.pages.takeLast(3)
-      Box(Modifier.size(56.dp, 70.dp).tap(enabled = doc.pages.isNotEmpty(), label = "Review ${doc.pages.size} pages", onClick = onReview), contentAlignment = Alignment.Center) {
+      Box(Modifier.size(56.dp, 70.dp).tap(enabled = doc.pages.isNotEmpty(), label = "Xem lại ${doc.pages.size} trang", onClick = onReview), contentAlignment = Alignment.Center) {
         last.forEachIndexed { i, p ->
           val img = rememberBitmap(p.shots[0].out ?: p.shots[0].src, 200)
           Box(
@@ -502,14 +502,14 @@ private fun RecentScans(onClose: () -> Unit, onPick: (ScanDoc) -> Unit) {
   FullSheet(onClose, ScanUi.bg) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
       Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Tap(I.close, "Close", onClick = onClose)
-        T("Recent scans", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center)
+        Tap(I.close, "Đóng", onClick = onClose)
+        T("Bản quét gần đây", Type.bold.copy(fontSize = 16.sp), ScanUi.text, Modifier.weight(1f), align = TextAlign.Center)
         Spacer(Modifier.size(48.dp))
       }
       if (docs.isEmpty()) {
         Column(Modifier.fillMaxSize().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
           Icon(I.lineScan, 48.dp, ScanUi.dim)
-          T("Scans you make appear here, so you can edit them again later.", Type.body, ScanUi.dim, Modifier.padding(top = 12.dp), align = TextAlign.Center)
+          T("Các bản quét bạn tạo sẽ hiện ở đây, để bạn chỉnh sửa lại sau.", Type.body, ScanUi.dim, Modifier.padding(top = 12.dp), align = TextAlign.Center)
         }
       } else Column(Modifier.verticalScroll(rememberScrollState())) {
         docs.forEachIndexed { i, d ->
@@ -520,17 +520,17 @@ private fun RecentScans(onClose: () -> Unit, onPick: (ScanDoc) -> Unit) {
               Box(Modifier.size(40.dp, 52.dp).clip(RoundedCornerShape(4.dp)).background(ScanUi.raised)) { if (img != null) Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
               Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 T(d.name, Type.item, ScanUi.text, maxLines = 1)
-                T("${plural(d.pages.size, "page")} · ${if (d.saved == null) "Draft" else if (d.isDirty()) "Unsaved changes" else "Saved"} · ${fmtDate(d.modified)}", Type.small, ScanUi.dim)
+                T("${plural(d.pages.size, "page")} · ${if (d.saved == null) "Bản nháp" else if (d.isDirty()) "Chưa lưu thay đổi" else "Đã lưu"} · ${fmtDate(d.modified)}", Type.small, ScanUi.dim)
               }
-              d.pdf?.let { pdf -> Tap(I.filePdfBox, "Open PDF", 22) { openFile(pathOf(pdf.path), pdf.name) } }
-              Tap(I.deleteOutline, "Delete scan", 22, ScanUi.dim) { deleting = d }
+              d.pdf?.let { pdf -> Tap(I.filePdfBox, "Mở PDF", 22) { openFile(pathOf(pdf.path), pdf.name) } }
+              Tap(I.deleteOutline, "Xóa bản quét", 22, ScanUi.dim) { deleting = d }
             }
           }
         }
       }
     }
     deleting?.let { d ->
-      ConfirmDialog("Delete this scan?", "The photos and edits are removed. A PDF you already saved stays in Files.", "Delete", danger = true, onDismiss = { deleting = null }) {
+      ConfirmDialog("Xóa bản quét này?", "Ảnh và các chỉnh sửa sẽ bị xóa. PDF bạn đã lưu vẫn ở trong Tệp.", "Xóa", danger = true, onDismiss = { deleting = null }) {
         deleteDoc(d.id)
         docs = listDocs()
       }

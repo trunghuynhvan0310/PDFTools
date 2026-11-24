@@ -60,12 +60,12 @@ data class ScanDoc(
   val saved: SavedScan? = null, // state at the last Save PDF, for "Discard changes"
 )
 
-val KIND_LABEL = linkedMapOf("whiteboard" to "Whiteboard", "book" to "Book", "doc" to "Document", "id" to "ID card", "card" to "Business card")
-val FILTERS = listOf("original" to "Original color", "auto" to "Auto-color", "light" to "Light text", "gray" to "Grayscale", "whiteboard" to "Whiteboard")
+val KIND_LABEL = linkedMapOf("whiteboard" to "Bảng trắng", "book" to "Sách", "doc" to "Tài liệu", "id" to "Thẻ ID", "card" to "Danh thiếp")
+val FILTERS = listOf("original" to "Màu gốc", "auto" to "Màu tự động", "light" to "Chữ sáng", "gray" to "Thang xám", "whiteboard" to "Bảng trắng")
 val PAGE_SIZES = listOf(
-  "fit" to "Original size", "A4-portrait" to "A4 Portrait", "A4-landscape" to "A4 Landscape", "A5-portrait" to "A5 Portrait",
-  "A5-landscape" to "A5 Landscape", "Letter-portrait" to "Letter Portrait", "Letter-landscape" to "Letter Landscape",
-  "Legal-portrait" to "Legal Portrait", "Legal-landscape" to "Legal Landscape",
+  "fit" to "Kích thước gốc", "A4-portrait" to "A4 dọc", "A4-landscape" to "A4 ngang", "A5-portrait" to "A5 dọc",
+  "A5-landscape" to "A5 ngang", "Letter-portrait" to "Letter dọc", "Letter-landscape" to "Letter ngang",
+  "Legal-portrait" to "Legal dọc", "Legal-landscape" to "Legal ngang",
 )
 
 fun uid(): String = java.lang.Long.toString(System.currentTimeMillis(), 36) + (1..5).map { "abcdefghijklmnopqrstuvwxyz0123456789".random() }.joinToString("")
@@ -75,7 +75,7 @@ private fun dirOf(id: String) = File(scansRoot(), id).apply { mkdirs() }
 
 fun newDoc(): ScanDoc {
   val d = Calendar.getInstance()
-  val name = "Scan ${d.get(Calendar.YEAR)}-${pad2(d.get(Calendar.MONTH) + 1)}-${pad2(d.get(Calendar.DAY_OF_MONTH))} ${pad2(d.get(Calendar.HOUR_OF_DAY))}.${pad2(d.get(Calendar.MINUTE))}"
+  val name = "Quét ${d.get(Calendar.YEAR)}-${pad2(d.get(Calendar.MONTH) + 1)}-${pad2(d.get(Calendar.DAY_OF_MONTH))} ${pad2(d.get(Calendar.HOUR_OF_DAY))}.${pad2(d.get(Calendar.MINUTE))}"
   return ScanDoc(uid(), name, System.currentTimeMillis(), System.currentTimeMillis(), emptyList())
 }
 
@@ -167,7 +167,7 @@ object ScanPrefs {
 
 /** Builds the PDF into Files. Re-saving an edited scan replaces its earlier PDF under the same name. */
 suspend fun exportPdf(doc: ScanDoc): ScanDoc = withContext(Dispatchers.IO) {
-  if (doc.pages.isEmpty()) fail("At least one page is required to create a PDF.")
+  if (doc.pages.isEmpty()) fail("Cần ít nhất một trang để tạo PDF.")
   val images = ArrayList<String>()
   val sheets = doc.pages.flatMap { p ->
     val first = images.size

@@ -43,9 +43,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Filter(val label: String) { All("All"), Pdf("PDF"), Zip("ZIP"), Recent("Recent") }
+private enum class Filter(val label: String) { All("Tất cả"), Pdf("PDF"), Zip("ZIP"), Recent("Gần đây") }
 
-private enum class DriveFilter(val label: String) { All("All"), Recent("Recent"), OnPhone("On this phone"), DriveOnly("Only in Drive") }
+private enum class DriveFilter(val label: String) { All("Tất cả"), Recent("Gần đây"), OnPhone("Trên máy"), DriveOnly("Chỉ trên Drive") }
 
 /** Saved: what the app made. Phone: every PDF on the device. Drive: the synced Google Drive folder. */
 private enum class Place { Saved, Phone, Drive }
@@ -98,18 +98,18 @@ fun FilesTab() {
   }
   val filteredBytes = filtered.sumOf { it.size }
   val subtitle = when {
-    needle.isNotEmpty() || filter != Filter.All -> if (filtered.isNotEmpty()) "${plural(filtered.size, "file")} · ${fmtSize(filteredBytes)}" else "No matching files"
-    folder != null -> if (files.isNotEmpty()) "${plural(files.size, "file")} · ${fmtSize(filteredBytes)}" else "Empty folder"
-    all.isNotEmpty() && folders.isNotEmpty() -> "${plural(all.size, "file")} across ${plural(folders.size, "folder")} · ${fmtSize(all.sumOf { it.size })} on this phone"
-    all.isNotEmpty() -> "${plural(all.size, "file")} · ${fmtSize(all.sumOf { it.size })} on this phone"
+    needle.isNotEmpty() || filter != Filter.All -> if (filtered.isNotEmpty()) "${plural(filtered.size, "file")} · ${fmtSize(filteredBytes)}" else "Không có tệp phù hợp"
+    folder != null -> if (files.isNotEmpty()) "${plural(files.size, "file")} · ${fmtSize(filteredBytes)}" else "Thư mục trống"
+    all.isNotEmpty() && folders.isNotEmpty() -> "${plural(all.size, "file")} trong ${plural(folders.size, "folder")} · ${fmtSize(all.sumOf { it.size })} trên điện thoại"
+    all.isNotEmpty() -> "${plural(all.size, "file")} · ${fmtSize(all.sumOf { it.size })} trên điện thoại"
     folders.isNotEmpty() -> plural(folders.size, "folder")
     else -> null
   }
 
-  val newFolder = { prompt = PromptSpec("New Folder", "Enter a name for this folder", "Folder name", "", "Create") { createFolder(it) } }
+  val newFolder = { prompt = PromptSpec("Thư mục mới", "Nhập tên cho thư mục này", "Tên thư mục", "", "Tạo") { createFolder(it) } }
   val deleteFile = { f: Saved ->
-    if (Backup.hasDriveCopies(listOf(f.path))) deleteChoice = DeleteChoice("Delete this file?", "\"${f.name}\"", listOf(f.path)) { removeFile(f.path) }
-    else confirm = ConfirmSpec("Delete this file?", "\"${f.name}\" will be removed from this phone. Copies you already shared are not affected.") { removeFile(f.path) }
+    if (Backup.hasDriveCopies(listOf(f.path))) deleteChoice = DeleteChoice("Xóa tệp này?", "\"${f.name}\"", listOf(f.path)) { removeFile(f.path) }
+    else confirm = ConfirmSpec("Xóa tệp này?", "\"${f.name}\" sẽ bị xóa khỏi điện thoại. Các bản bạn đã chia sẻ không bị ảnh hưởng.") { removeFile(f.path) }
   }
   val deleteFolder = { f: Folder, count: Int ->
     val paths = listFiles(f.path).map { it.path }
@@ -118,8 +118,8 @@ fun FilesTab() {
       scope.launch { try { Backup.deleteFolder(f.name) } catch (e: Exception) { Backup.update { it.copy(error = Backup.describe(e)) } } }
       Unit
     }
-    if (Backup.hasDriveCopies(paths)) deleteChoice = DeleteChoice("Delete folder?", "\"${f.name}\" and ${plural(count, "file")} inside", paths, both) { removeFolder(f.path) }
-    else confirm = ConfirmSpec("Delete folder?", "\"${f.name}\" and ${if (count == 0) "any files inside" else "${plural(count, "file")} inside"} will be permanently deleted.") { removeFolder(f.path) }
+    if (Backup.hasDriveCopies(paths)) deleteChoice = DeleteChoice("Xóa thư mục?", "\"${f.name}\" và ${plural(count, "file")} bên trong", paths, both) { removeFolder(f.path) }
+    else confirm = ConfirmSpec("Xóa thư mục?", "\"${f.name}\" và ${if (count == 0) "mọi tệp bên trong" else "${plural(count, "file")} bên trong"} sẽ bị xóa vĩnh viễn.") { removeFolder(f.path) }
   }
 
   Screen {
@@ -127,19 +127,19 @@ fun FilesTab() {
       Row(Modifier.padding(top = 4.dp).tap(scaleTo = 0.95f, onClick = goBack).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(I.arrowLeft, 20.dp)
         Spacer(Modifier.size(6.dp))
-        T("All Files", Type.med, c.sub)
+        T("Tất cả tệp", Type.med, c.sub)
       }
-      LargeTitle(folderName, if (onDrive) "In Google Drive" else subtitle)
+      LargeTitle(folderName, if (onDrive) "Trong Google Drive" else subtitle)
     } else {
-      LargeTitle("Files", when (place) { Place.Drive -> "Synced with Google Drive"; Place.Phone -> "Every PDF on this phone"; Place.Saved -> subtitle })
+      LargeTitle("Tệp", when (place) { Place.Drive -> "Đồng bộ với Google Drive"; Place.Phone -> "Mọi PDF trên điện thoại"; Place.Saved -> subtitle })
     }
 
     // Saved / Phone / Google Drive, only at the top level: inside a folder the subtitle already says which side it is.
     if (folderName == null) {
-      Segmented(listOf(Place.Saved to "Saved", Place.Phone to "Phone", Place.Drive to "Drive"), place, icons = listOf(I.folderOutline, I.cellphone, I.googleDrive)) { place = it; query = "" }
+      Segmented(listOf(Place.Saved to "Đã lưu", Place.Phone to "Điện thoại", Place.Drive to "Drive"), place, icons = listOf(I.folderOutline, I.cellphone, I.googleDrive)) { place = it; query = "" }
       Spacer(Modifier.height(12.dp))
     }
-    SearchField(query, { query = it }, if (place == Place.Phone) "Search PDFs on this phone…" else "Search files…")
+    SearchField(query, { query = it }, if (place == Place.Phone) "Tìm PDF trên điện thoại…" else "Tìm tệp…")
 
     AnimatedContent(place, label = "place", transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) }) { where ->
       Column {
@@ -154,7 +154,7 @@ fun FilesTab() {
         // Folders sit on top as a strip of cards; the filters below only narrow the files.
         val showFolders = folder == null && needle.isEmpty() && (folders.isNotEmpty() || files.isNotEmpty())
         if (showFolders) {
-          GroupLabel(if (folders.isEmpty()) "Folders" else "Folders · ${folders.size}", first = true)
+          GroupLabel(if (folders.isEmpty()) "Thư mục" else "Thư mục · ${folders.size}", first = true)
           Row(Modifier.padding(top = 4.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             NewFolderCard(newFolder)
             folders.forEach { (f, n) ->
@@ -164,18 +164,18 @@ fun FilesTab() {
         }
         when {
           files.isEmpty() && needle.isEmpty() && showFolders -> T(
-            "Files you save outside a folder appear here.", Type.small, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center,
+            "Các tệp bạn lưu ngoài thư mục sẽ hiện ở đây.", Type.small, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center,
           )
           files.isEmpty() && needle.isEmpty() -> Empty(
             { ToolArt("files", 112.dp) },
-            if (folder != null) "This folder is empty" else "No files yet",
-            if (folder != null) "Move files into this folder or generate new PDFs." else "PDFs you merge, split, compress or scan are saved here, so you can share them again later.",
+            if (folder != null) "Thư mục này trống" else "Chưa có tệp nào",
+            if (folder != null) "Chuyển tệp vào thư mục này hoặc tạo PDF mới." else "PDF bạn gộp, tách, nén hoặc quét sẽ được lưu ở đây, để bạn chia sẻ lại sau.",
           ) {
-            if (folder != null) Btn("Back to All Files", Modifier.fillMaxWidth(), kind = BtnKind.Secondary, onClick = goBack)
+            if (folder != null) Btn("Quay lại tất cả tệp", Modifier.fillMaxWidth(), kind = BtnKind.Secondary, onClick = goBack)
             else {
-              Btn("Create a folder", Modifier.fillMaxWidth(), I.folderPlusOutline, onClick = newFolder)
-              Btn("Scan a document", Modifier.fillMaxWidth(), I.cameraOutline, BtnKind.Secondary) { nav.scan() }
-              Btn("Browse tools", Modifier.fillMaxWidth(), kind = BtnKind.Secondary) { nav.show(Tab.Tools) }
+              Btn("Tạo thư mục", Modifier.fillMaxWidth(), I.folderPlusOutline, onClick = newFolder)
+              Btn("Quét tài liệu", Modifier.fillMaxWidth(), I.cameraOutline, BtnKind.Secondary) { nav.scan() }
+              Btn("Xem các công cụ", Modifier.fillMaxWidth(), kind = BtnKind.Secondary) { nav.show(Tab.Tools) }
             }
           }
           else -> {
@@ -186,7 +186,7 @@ fun FilesTab() {
               Filter.entries.forEach { f -> Chip(f.label, filter == f) { filter = f } }
             }
             if (filtered.isEmpty()) {
-              T("No files match \"${needle.ifEmpty { filter.label }}\".", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center)
+              T("Không có tệp nào khớp \"${needle.ifEmpty { filter.label }}\".", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center)
             }
             byDay(filtered) { it.modified }.forEachIndexed { gi, (label, items) ->
               GroupLabel(label, first = gi == 0)
@@ -198,7 +198,7 @@ fun FilesTab() {
                   ) {
                     // Only files still waiting to upload get a cloud: "Synced" is the normal state.
                     if (Backup.waiting(f.path, f.name)) Icon(I.cloudUploadOutline, 17.dp, c.accent)
-                    IconBtn(I.dotsVertical, color = c.sub, label = "More") { menu = Menu.OfFile(f) }
+                    IconBtn(I.dotsVertical, color = c.sub, label = "Thêm") { menu = Menu.OfFile(f) }
                   }
                 }
               }
@@ -218,23 +218,23 @@ fun FilesTab() {
         when (m) {
           is Menu.OfFile -> {
             val f = m.f
-            scans[f.name]?.let { id -> MenuRow(I.fileDocumentEditOutline, "Edit scan", onClick = pick { nav.scan(id) }) }
-            MenuRow(I.shareVariantOutline, "Share", onClick = pick { share(f.path, f.name) })
+            scans[f.name]?.let { id -> MenuRow(I.fileDocumentEditOutline, "Sửa bản quét", onClick = pick { nav.scan(id) }) }
+            MenuRow(I.shareVariantOutline, "Chia sẻ", onClick = pick { share(f.path, f.name) })
             if (kindOf(f.name) == DocKind.Pdf) {
-              MenuRow(I.fileWordOutline, "Save as Word doc", onClick = pick { exporting = f to true })
-              MenuRow(I.fileImageOutline, "Save as JPEG", onClick = pick { exporting = f to false })
+              MenuRow(I.fileWordOutline, "Lưu thành tệp Word", onClick = pick { exporting = f to true })
+              MenuRow(I.fileImageOutline, "Lưu thành ảnh JPEG", onClick = pick { exporting = f to false })
             }
-            MenuRow(I.pencilOutline, "Rename", onClick = pick {
-              prompt = PromptSpec("Rename File", "Rename \"${f.name}\"", "File name", stem(f.name), "Save") { relinkPdf(f.path, renameFile(f, it)) }
+            MenuRow(I.pencilOutline, "Đổi tên", onClick = pick {
+              prompt = PromptSpec("Đổi tên tệp", "Đổi tên \"${f.name}\"", "Tên tệp", stem(f.name), "Lưu") { relinkPdf(f.path, renameFile(f, it)) }
             })
-            MenuRow(I.folderMoveOutline, "Move to folder", onClick = pick { moving = f })
-            MenuRow(I.deleteOutline, "Delete", color = c.accent, onClick = pick { deleteFile(f) })
+            MenuRow(I.folderMoveOutline, "Chuyển vào thư mục", onClick = pick { moving = f })
+            MenuRow(I.deleteOutline, "Xóa", color = c.accent, onClick = pick { deleteFile(f) })
           }
           is Menu.OfFolder -> {
-            MenuRow(I.pencilOutline, "Rename", onClick = pick {
-              prompt = PromptSpec("Rename Folder", "Rename \"${m.f.name}\"", "Folder name", m.f.name, "Save") { renameFolder(m.f.path, it) }
+            MenuRow(I.pencilOutline, "Đổi tên", onClick = pick {
+              prompt = PromptSpec("Đổi tên thư mục", "Đổi tên \"${m.f.name}\"", "Tên thư mục", m.f.name, "Lưu") { renameFolder(m.f.path, it) }
             })
-            MenuRow(I.deleteOutline, "Delete", color = c.accent, onClick = pick { deleteFolder(m.f, m.count) })
+            MenuRow(I.deleteOutline, "Xóa", color = c.accent, onClick = pick { deleteFolder(m.f, m.count) })
           }
         }
       }
@@ -242,15 +242,15 @@ fun FilesTab() {
   }
 
   prompt?.let { p -> PromptDialog(p.title, p.initial, p.subtitle, p.placeholder, p.submit, onClose = { prompt = null }, onSubmit = p.run) }
-  confirm?.let { cf -> ConfirmDialog(cf.title, cf.message, "Delete", danger = true, onDismiss = { confirm = null }, onConfirm = cf.run) }
+  confirm?.let { cf -> ConfirmDialog(cf.title, cf.message, "Xóa", danger = true, onDismiss = { confirm = null }, onConfirm = cf.run) }
 
   deleteChoice?.let { d ->
-    AppDialog({ deleteChoice = null }, d.title, "${d.what} ${if (d.paths.size > 1) "are" else "is"} also in your Google Drive.") {
+    AppDialog({ deleteChoice = null }, d.title, "${d.what} cũng có trong Google Drive của bạn.") {
       Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Btn("Delete from this phone only", Modifier.fillMaxWidth(), I.cellphoneRemove, BtnKind.Secondary) { Backup.keepInDriveOnly(d.paths); d.remove(); deleteChoice = null }
-        Btn("Delete from phone and Drive", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { (d.removeBoth ?: d.remove)(); deleteChoice = null }
+        Btn("Chỉ xóa khỏi điện thoại", Modifier.fillMaxWidth(), I.cellphoneRemove, BtnKind.Secondary) { Backup.keepInDriveOnly(d.paths); d.remove(); deleteChoice = null }
+        Btn("Xóa khỏi điện thoại và Drive", Modifier.fillMaxWidth(), I.deleteOutline, BtnKind.Danger) { (d.removeBoth ?: d.remove)(); deleteChoice = null }
         T(
-          "Phone only keeps the Drive copy; you can download it again from Files → Google Drive. Phone and Drive moves the Drive copy to Drive's Trash for 30 days.",
+          "Chỉ xóa khỏi điện thoại sẽ giữ bản trên Drive; bạn có thể tải lại từ Tệp → Google Drive. Xóa khỏi điện thoại và Drive sẽ chuyển bản trên Drive vào Thùng rác của Drive trong 30 ngày.",
           Type.small, c.sub, align = TextAlign.Center,
         )
       }
@@ -258,10 +258,10 @@ fun FilesTab() {
   }
 
   moving?.let { f ->
-    AppDialog({ moving = null }, "Move File", f.name) {
+    AppDialog({ moving = null }, "Chuyển tệp", f.name) {
       Column(Modifier.padding(top = 12.dp, bottom = 16.dp)) {
         if (folder != null) {
-          MenuRow(I.homeOutline, "All Files (Root)", "Move out of this folder", c.accent, trailing = { Icon(I.chevronRight, 20.dp, c.faint) }) { moveFileToRoot(f.path); moving = null }
+          MenuRow(I.homeOutline, "Tất cả tệp (gốc)", "Chuyển ra khỏi thư mục này", c.accent, trailing = { Icon(I.chevronRight, 20.dp, c.faint) }) { moveFileToRoot(f.path); moving = null }
         }
         val targets = folders.filter { it.first.path != folder?.path }
         targets.forEach { (t, n) ->
@@ -278,10 +278,10 @@ fun FilesTab() {
           }
         }
         if (targets.isEmpty() && folder == null) {
-          T("No folders exist yet. Create a folder first to organize files.", Type.small, c.sub, Modifier.fillMaxWidth().padding(vertical = 16.dp), align = TextAlign.Center)
+          T("Chưa có thư mục nào. Hãy tạo thư mục trước để sắp xếp tệp.", Type.small, c.sub, Modifier.fillMaxWidth().padding(vertical = 16.dp), align = TextAlign.Center)
         }
       }
-      Btn("Cancel", Modifier.fillMaxWidth(), kind = BtnKind.Secondary) { moving = null }
+      Btn("Hủy", Modifier.fillMaxWidth(), kind = BtnKind.Secondary) { moving = null }
     }
   }
 
@@ -294,12 +294,12 @@ private val FOLDER_CARD = 128.dp
 private fun NewFolderCard(onClick: () -> Unit) {
   val shape = RoundedCornerShape(Radius.group)
   Column(
-    Modifier.width(FOLDER_CARD).height(112.dp).tap(shape = shape, scaleTo = 0.95f, label = "New folder", onClick = onClick)
+    Modifier.width(FOLDER_CARD).height(112.dp).tap(shape = shape, scaleTo = 0.95f, label = "Thư mục mới", onClick = onClick)
       .background(c.accentSoft, shape).padding(14.dp),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
     Box(Modifier.size(38.dp).background(c.surface, CircleShape), contentAlignment = Alignment.Center) { Icon(I.plus, 20.dp, c.accent) }
-    T("New folder", Type.bold, c.accent, maxLines = 1)
+    T("Thư mục mới", Type.bold, c.accent, maxLines = 1)
   }
 }
 
@@ -307,7 +307,7 @@ private fun NewFolderCard(onClick: () -> Unit) {
 private fun FolderCard(name: String, count: Int, onOpen: () -> Unit, onMore: () -> Unit) {
   val shape = RoundedCornerShape(Radius.group)
   Box(
-    Modifier.width(FOLDER_CARD).height(112.dp).tap(shape = shape, scaleTo = 0.95f, label = "Open $name", onLongClick = onMore, onClick = onOpen)
+    Modifier.width(FOLDER_CARD).height(112.dp).tap(shape = shape, scaleTo = 0.95f, label = "Mở $name", onLongClick = onMore, onClick = onOpen)
       .background(c.surface, shape).border(0.6.dp, c.lineStrong, shape),
   ) {
     Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.SpaceBetween) {
@@ -317,7 +317,7 @@ private fun FolderCard(name: String, count: Int, onOpen: () -> Unit, onMore: () 
         T(plural(count, "file"), Type.small, c.sub, maxLines = 1)
       }
     }
-    Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) { IconBtn(I.dotsVertical, 18.dp, c.sub, "More", onClick = onMore) }
+    Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) { IconBtn(I.dotsVertical, 18.dp, c.sub, "Thêm", onClick = onMore) }
   }
 }
 
@@ -340,10 +340,10 @@ private fun ExportDialog(pdf: Saved, word: Boolean, onClose: () -> Unit) {
   }
   val f = file
   when {
-    failed -> AppDialog(onClose, "Couldn’t convert this PDF", "It may be password-protected or damaged.") {
+    failed -> AppDialog(onClose, "Không chuyển đổi được PDF này", "Có thể tệp đã đặt mật khẩu hoặc bị hỏng.") {
       Btn("OK", Modifier.fillMaxWidth().padding(top = 18.dp), kind = BtnKind.Secondary, onClick = onClose)
     }
-    f == null -> AppDialog(onClose, if (word) "Saving as Word doc…" else "Saving as JPEG…", "Every page is converted on this phone.") {
+    f == null -> AppDialog(onClose, if (word) "Đang lưu thành tệp Word…" else "Đang lưu thành ảnh JPEG…", "Mọi trang được chuyển đổi ngay trên điện thoại.") {
       Spinner(modifier = Modifier.padding(vertical = 20.dp).align(Alignment.CenterHorizontally))
     }
     else -> {
@@ -352,23 +352,23 @@ private fun ExportDialog(pdf: Saved, word: Boolean, onClose: () -> Unit) {
       val run = { key: String, fn: suspend () -> String? ->
         if (busy.isEmpty()) scope.launch {
           busy = key
-          try { fn()?.let { notes = notes + (key to it) } } catch (e: Exception) { notes = notes + (key to (e.message ?: "Something went wrong.")) }
+          try { fn()?.let { notes = notes + (key to it) } } catch (e: Exception) { notes = notes + (key to (e.message ?: "Đã xảy ra lỗi.")) }
           busy = ""
         }
         Unit
       }
-      AppDialog(onClose, if (word) "Word doc saved" else if (many) "JPEGs saved" else "JPEG saved", "${f.name} · ${fmtSize(f.size)} · in Files") {
+      AppDialog(onClose, if (word) "Đã lưu tệp Word" else if (many) "Đã lưu các ảnh JPEG" else "Đã lưu ảnh JPEG", "${f.name} · ${fmtSize(f.size)} · trong Tệp") {
         Column(Modifier.padding(top = 10.dp)) {
           val option = @Composable { key: String, glyph: Int, title: String, sub: String, fn: suspend () -> String? ->
             MenuRow(glyph, title, notes[key] ?: sub, trailing = { if (busy == key) Spinner() }) { run(key, fn) }
           }
-          option("open", I.openInNew, "Open", if (word) "In your Word or docs app" else if (many) "A ZIP with one JPEG per page" else "In your gallery or photo app") { openFile(f.path, f.name); null }
-          option("device", I.cellphoneArrowDown, "Save to device", "Pick a folder, like Downloads") { saveToDevice(f).takeIf { it.isNotEmpty() }?.let { "Saved to $it" } }
-          option("drive", I.googleDrive, "Save to Google Drive", if (drive.enabled) "PDF Tools folder · ${drive.email}" else "Turn on Drive sync in Settings first") {
+          option("open", I.openInNew, "Mở", if (word) "Trong ứng dụng Word hoặc văn bản" else if (many) "Tệp ZIP chứa mỗi trang một ảnh JPEG" else "Trong thư viện ảnh của bạn") { openFile(f.path, f.name); null }
+          option("device", I.cellphoneArrowDown, "Lưu vào thiết bị", "Chọn thư mục, như Downloads") { saveToDevice(f).takeIf { it.isNotEmpty() }?.let { "Đã lưu vào $it" } }
+          option("drive", I.googleDrive, "Lưu vào Google Drive", if (drive.enabled) "Thư mục PDF Tools · ${drive.email}" else "Hãy bật đồng bộ Drive trong Cài đặt trước") {
             if (!drive.enabled) { onClose(); nav.show(Tab.Settings); null }
-            else try { Backup.saveCopy(f, mimeOf(f.name)); "Uploaded to PDF Tools in your Drive" } catch (e: Exception) { throw UserError(Backup.describe(e)) }
+            else try { Backup.saveCopy(f, mimeOf(f.name)); "Đã tải lên thư mục PDF Tools trong Drive của bạn" } catch (e: Exception) { throw UserError(Backup.describe(e)) }
           }
-          option("share", I.shareVariantOutline, "Share", "Send to an app or contact") { share(f.path, f.name); null }
+          option("share", I.shareVariantOutline, "Chia sẻ", "Gửi tới ứng dụng hoặc người liên hệ") { share(f.path, f.name); null }
         }
       }
     }
@@ -401,8 +401,8 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
   BackHandler(picked != null) { picked = null } // back leaves selection before it leaves a folder
 
   if (!state.enabled) {
-    Empty({ Icon(I.googleDrive, 56.dp, c.faint) }, "Google Drive sync is off", "Turn it on to keep your PDFs and folders the same on this phone and in your own Google Drive.") {
-      Btn("Turn on in Settings", Modifier.fillMaxWidth(), I.cogOutline) { nav.show(Tab.Settings) }
+    Empty({ Icon(I.googleDrive, 56.dp, c.faint) }, "Đồng bộ Google Drive đang tắt", "Bật để PDF và thư mục trên điện thoại giống với Google Drive của bạn.") {
+      Btn("Bật trong Cài đặt", Modifier.fillMaxWidth(), I.cogOutline) { nav.show(Tab.Settings) }
     }
     return
   }
@@ -415,7 +415,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
     if (todo.isEmpty()) picked = null
     else scope.launch {
       error = ""
-      val label = { done: Int -> if (todo.size > 1) "Downloading ${minOf(done + 1, todo.size)} of ${todo.size}…" else "Downloading…" }
+      val label = { done: Int -> if (todo.size > 1) "Đang tải ${minOf(done + 1, todo.size)}/${todo.size}…" else "Đang tải…" }
       downloading = label(0)
       try {
         Backup.downloadToPhone(todo) { downloading = label(it) }
@@ -448,18 +448,18 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
       Modifier.fillMaxWidth().shadow(14.dp, shape).background(c.surface, shape).border(0.6.dp, c.lineStrong, shape).padding(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      IconBtn(I.close, label = "Cancel selection") { picked = null }
+      IconBtn(I.close, label = "Hủy chọn") { picked = null }
       Column(Modifier.weight(1f).padding(start = 2.dp)) {
-        T("${plural(chosen.size, "file")} selected", Type.bold)
+        T("Đã chọn ${plural(chosen.size, "file")}", Type.bold)
         T(
           downloading.ifEmpty {
-            if (toFetch.isNotEmpty()) "${fmtSize(toFetch.sumOf { it.size })} to download${if (toFetch.size < chosen.size) " · ${chosen.size - toFetch.size} already here" else ""}"
-            else "Already on this phone"
+            if (toFetch.isNotEmpty()) "${fmtSize(toFetch.sumOf { it.size })} cần tải${if (toFetch.size < chosen.size) " · ${chosen.size - toFetch.size} đã có trên máy" else ""}"
+            else "Đã có trên điện thoại"
           },
           Type.small, c.sub, maxLines = 1,
         )
       }
-      Btn("Download", icon = I.downloadOutline, busy = downloading.isNotEmpty(), enabled = toFetch.isNotEmpty(), height = 46.dp) { download(chosen) }
+      Btn("Tải xuống", icon = I.downloadOutline, busy = downloading.isNotEmpty(), enabled = toFetch.isNotEmpty(), height = 46.dp) { download(chosen) }
     }
   }
 
@@ -479,7 +479,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
   val problem = error.ifEmpty { if (!Backup.syncing) state.error ?: "" else "" }
 
   Spacer(Modifier.height(12.dp))
-  GroupLabel(state.email ?: "Google Drive", if (Backup.syncing) "Syncing…" else "Sync now", if (Backup.syncing) null else ({ Backup.syncNow(); Unit }), first = true, caps = false)
+  GroupLabel(state.email ?: "Google Drive", if (Backup.syncing) "Đang đồng bộ…" else "Đồng bộ ngay", if (Backup.syncing) null else ({ Backup.syncNow(); Unit }), first = true, caps = false)
   Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(0.6.dp).background(c.line)) // sets the account apart from the files under it
   if (problem.isNotEmpty()) T(problem, Type.small, c.accent, Modifier.padding(top = 4.dp, bottom = 4.dp))
   if (downloading.isNotEmpty() && picked == null) T(downloading, Type.small, c.sub, Modifier.padding(vertical = 4.dp))
@@ -488,11 +488,11 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
   when {
     data == null && problem.isEmpty() -> Spinner(c.accent, modifier = Modifier.padding(top = 40.dp).align(Alignment.CenterHorizontally))
     folders.isEmpty() && shown.isEmpty() && filter != DriveFilter.All && data != null -> T(
-      "No ${filter.label.lowercase()} files here.", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center,
+      "Không có tệp nào ở mục \"${filter.label}\".", Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 28.dp), align = TextAlign.Center,
     )
     folders.isNotEmpty() || shown.isNotEmpty() -> {
       if (folders.isNotEmpty()) {
-        GroupLabel("Folders")
+        GroupLabel("Thư mục")
         Group {
           folders.forEachIndexed { i, name ->
             ListRow(
@@ -500,7 +500,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
               onClick = { onOpenFolder(name) }, onLongClick = { folderMenu = name },
             ) {
               if (busyId == name) Spinner(c.accent, modifier = Modifier.padding(horizontal = 10.dp))
-              else IconBtn(I.dotsVertical, color = c.sub, label = "More") { folderMenu = name }
+              else IconBtn(I.dotsVertical, color = c.sub, label = "Thêm") { folderMenu = name }
             }
           }
         }
@@ -508,7 +508,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
       byDay(shown) { it.modified }.forEachIndexed { gi, (label, items) ->
         val ids = items.map { it.id }
         val allOn = picked != null && ids.all { picked!!.contains(it) }
-        GroupLabel(label, if (picked != null) (if (allOn) "Deselect" else "Select all") else null, { toggle(ids, !allOn) })
+        GroupLabel(label, if (picked != null) (if (allOn) "Bỏ chọn" else "Chọn tất cả") else null, { toggle(ids, !allOn) })
         Group {
           items.forEachIndexed { i, f ->
             val here = Backup.isOnPhone(f)
@@ -516,15 +516,15 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
             ListRow(
               stem(f.name), first = i == 0, marquee = true,
               lead = { if (picked != null) CheckMark(on) else DocGlyph() },
-              subtitle = "${if (needle.isNotEmpty() && f.folder.isNotEmpty()) "${f.folder} · " else ""}${fmtSize(f.size)} · ${fmtTime(f.modified)}${if (here) " · On this phone" else ""}",
+              subtitle = "${if (needle.isNotEmpty() && f.folder.isNotEmpty()) "${f.folder} · " else ""}${fmtSize(f.size)} · ${fmtTime(f.modified)}${if (here) " · Trên máy" else ""}",
               onClick = if (picked != null) ({ toggle(listOf(f.id), !on) }) else if (busyId.isNotEmpty()) null else ({ act(f) { Backup.fetch(f).let { openFile(it.path, it.name) } } }),
               onLongClick = { if (downloading.isEmpty()) toggle(listOf(f.id), !on) },
             ) {
               if (picked == null) {
                 if (busyId == f.id) Spinner(c.accent, modifier = Modifier.padding(horizontal = 10.dp))
                 else {
-                  if (!here) IconBtn(I.downloadOutline, label = "Download") { if (downloading.isEmpty()) download(listOf(f)) }
-                  IconBtn(I.shareVariantOutline, label = "Share") { act(f) { Backup.fetch(f).let { share(it.path, it.name) } } }
+                  if (!here) IconBtn(I.downloadOutline, label = "Tải xuống") { if (downloading.isEmpty()) download(listOf(f)) }
+                  IconBtn(I.shareVariantOutline, label = "Chia sẻ") { act(f) { Backup.fetch(f).let { share(it.path, it.name) } } }
                 }
               }
             }
@@ -533,7 +533,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
       }
     }
     data != null -> T(
-      if (needle.isNotEmpty()) "No Drive files match \"${query.trim()}\"." else if (folder != null) "This folder has no PDFs in Drive yet." else "No PDFs in your Drive folder yet.",
+      if (needle.isNotEmpty()) "Không có tệp Drive nào khớp \"${query.trim()}\"." else if (folder != null) "Thư mục này chưa có PDF nào trên Drive." else "Thư mục Drive của bạn chưa có PDF nào.",
       Type.body, c.sub, Modifier.fillMaxWidth().padding(top = 40.dp), align = TextAlign.Center,
     )
   }
@@ -554,29 +554,29 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
         T(name, Type.bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), maxLines = 1)
         val pick = { run: () -> Unit -> { folderMenu = null; run() } }
         MenuRow(
-          I.downloadOutline, "Download all",
-          if (toGet.isEmpty()) "Already on this phone" else "${plural(toGet.size, "file")} · ${fmtSize(toGet.sumOf { it.size })}",
+          I.downloadOutline, "Tải tất cả",
+          if (toGet.isEmpty()) "Đã có trên điện thoại" else "${plural(toGet.size, "file")} · ${fmtSize(toGet.sumOf { it.size })}",
           onClick = pick { if (downloading.isEmpty()) download(toGet) },
         )
-        MenuRow(I.pencilOutline, "Rename", onClick = pick { renaming = name })
-        MenuRow(I.deleteOutline, "Delete", color = c.accent, onClick = pick { deleting = name })
+        MenuRow(I.pencilOutline, "Đổi tên", onClick = pick { renaming = name })
+        MenuRow(I.deleteOutline, "Xóa", color = c.accent, onClick = pick { deleting = name })
       }
     }
   }
   renaming?.let { name ->
-    PromptDialog("Rename Folder", name, "Renamed in Drive and on this phone.", "Folder name", "Save", onClose = { renaming = null }) { typed ->
+    PromptDialog("Đổi tên thư mục", name, "Được đổi tên trên Drive và trên điện thoại.", "Tên thư mục", "Lưu", onClose = { renaming = null }) { typed ->
       folderAct(name) { Backup.renameFolder(name, typed) }
     }
   }
   deleting?.let { name ->
     ConfirmDialog(
-      "Delete folder?", "\"$name\" and ${plural(all.count { it.folder == name }, "file")} inside go to Drive's Trash for 30 days, and are deleted from this phone.",
-      "Delete", danger = true, requireTyping = "confirm", onDismiss = { deleting = null },
+      "Xóa thư mục?", "\"$name\" và ${plural(all.count { it.folder == name }, "file")} bên trong sẽ vào Thùng rác của Drive trong 30 ngày, và bị xóa khỏi điện thoại.",
+      "Xóa", danger = true, requireTyping = "xác nhận", onDismiss = { deleting = null },
     ) { folderAct(name) { Backup.deleteFolder(name) } }
   }
 
   T(
-    if (picked != null) "Tap files to add or remove them." else "Hold a file to pick several.",
+    if (picked != null) "Chạm vào tệp để chọn hoặc bỏ chọn." else "Giữ một tệp để chọn nhiều tệp.",
     Type.small.copy(fontSize = Type.small.fontSize * 0.9f), c.faint, Modifier.fillMaxWidth().padding(top = 12.dp), align = TextAlign.Center,
   )
 }

@@ -87,7 +87,7 @@ private val resultKeys = AtomicInteger()
  * ponytail: a result arriving after the process was killed is dropped; the user just picks again.
  */
 suspend fun <I, O> awaitResult(contract: ActivityResultContract<I, O>, input: I): O {
-  val activity = hostActivity ?: error("The app isn't ready yet.")
+  val activity = hostActivity ?: error("Ứng dụng chưa sẵn sàng.")
   return suspendCancellableCoroutine { cont ->
     var launcher: ActivityResultLauncher<I>? = null
     launcher = activity.activityResultRegistry.register("await-${resultKeys.incrementAndGet()}", contract) { out ->

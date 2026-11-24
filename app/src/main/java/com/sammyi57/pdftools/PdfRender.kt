@@ -114,7 +114,7 @@ private fun embedImage(doc: PDDocument, path: String): PDImageXObject {
   val head = ByteArray(2)
   file.inputStream().use { it.read(head) }
   if (head[0] == 0xFF.toByte() && head[1] == 0xD8.toByte()) return file.inputStream().use { JPEGFactory.createFromStream(doc, it) }
-  val bitmap = BitmapFactory.decodeFile(file.path) ?: throw IllegalArgumentException("Could not read ${file.name}")
+  val bitmap = BitmapFactory.decodeFile(file.path) ?: throw IllegalArgumentException("Không đọc được ${file.name}")
   try {
     return JPEGFactory.createFromImage(doc, bitmap, 0.92f)
   } finally {
@@ -455,8 +455,8 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
         }
       }
       if (added > 0) return doc.bytes()
-      if (count > 0 && searchable == count) fail("This PDF already has text on every page. Open it in the viewer and hold a word to select and copy it.")
-      fail("No text could be read on the pages. They may be blank, handwritten, or too blurry or small to read.")
+      if (count > 0 && searchable == count) fail("PDF này đã có chữ ở mọi trang. Hãy mở trong trình xem và giữ một từ để chọn và sao chép.")
+      fail("Không đọc được chữ nào trên các trang. Có thể trang trống, viết tay, hoặc quá mờ hay quá nhỏ.")
     }
   } finally {
     recognizer.close()

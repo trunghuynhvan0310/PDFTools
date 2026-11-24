@@ -114,7 +114,7 @@ object DocVision {
   // Decodes upright (EXIF applied), downsampled so the long side stays near maxSize.
   fun load(context: Context, uri: String, maxSize: Int): Bitmap {
     val open = {
-      if (uri.startsWith("content:")) context.contentResolver.openInputStream(Uri.parse(uri)) ?: throw IllegalArgumentException("Cannot open $uri")
+      if (uri.startsWith("content:")) context.contentResolver.openInputStream(Uri.parse(uri)) ?: throw IllegalArgumentException("Không mở được $uri")
       else File(pathOf(uri)).inputStream()
     }
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -122,7 +122,7 @@ object DocVision {
     var sample = 1
     while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSize) sample *= 2
     val bmp = open().use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
-      ?: throw IllegalArgumentException("Not an image: $uri")
+      ?: throw IllegalArgumentException("Không phải ảnh: $uri")
     val degrees = open().use {
       when (ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
         ExifInterface.ORIENTATION_ROTATE_90 -> 90f
