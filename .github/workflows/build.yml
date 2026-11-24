@@ -1,0 +1,48 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      all_abis:
+        description: "Build all ABIs + universal APK (default: arm64-v8a only)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK 36 + extension 19
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36-ext19" "build-tools;36.0.0" "platform-tools" \
+            || sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        run: |
+          chmod +x gradlew
+          if [ "${{ inputs.all_abis }}" = "true" ]; then
+            ./gradlew :app:assembleRelease -PallAbis --no-daemon
+          else
+            ./gradlew :app:assembleRelease --no-daemon
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdf-tools-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
