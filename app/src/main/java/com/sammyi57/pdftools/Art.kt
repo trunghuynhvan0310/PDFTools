@@ -37,7 +37,7 @@ import kotlin.math.roundToInt
 private class Kit(val fill: Color, val stroke: Color, val line: Color, val accent: Color, val soft: Color)
 
 private const val SW = 1.5f
-private val boldFace: Typeface by lazy { ResourcesCompat.getFont(appContext, R.font.poppins_semibold) ?: Typeface.DEFAULT_BOLD }
+private val boldFace: Typeface by lazy { ResourcesCompat.getFont(appContext, R.font.be_vietnam_semibold) ?: Typeface.DEFAULT_BOLD }
 private val parsed = HashMap<String, Path>()
 private fun svg(d: String) = parsed.getOrPut(d) { PathParser().parsePathString(d).toPath() }
 

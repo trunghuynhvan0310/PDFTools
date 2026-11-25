@@ -74,11 +74,11 @@ private val ROW = Color(0xFFF4F4F5)
 private val PURPLE = Color(0xFF7A6CF2)
 private val TEAL = Color(0xFF1FB58C)
 private val SALMON = Color(0xFFF2735B)
-private val HAND = FontFamily(Font(R.font.caveat)) // Caveat, SIL Open Font License
+private val HAND = FontFamily(Font(R.font.patrick_hand)) // Patrick Hand (has Vietnamese), SIL Open Font License
 private const val PAGES = 3
 
-private val TITLE = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.SemiBold, fontSize = 31.sp, lineHeight = 38.sp, letterSpacing = (-0.8).sp)
-private val SMALL = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, lineHeight = 16.sp)
+private val TITLE = TextStyle(fontFamily = AppFont, fontWeight = FontWeight.SemiBold, fontSize = 31.sp, lineHeight = 38.sp, letterSpacing = (-0.8).sp)
+private val SMALL = TextStyle(fontFamily = AppFont, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, lineHeight = 16.sp)
 
 private class Look(val pref: ThemePref, val tint: Color, val chip: String, val body: String, val name: String, val sub: String, val kind: Int)
 
@@ -201,7 +201,7 @@ private fun PageWelcome() {
 
     T(
       "Đủ công cụ PDF.\nTất cả trên điện thoại.\nHoàn toàn miễn phí.",
-      TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Medium, fontSize = 27.sp, lineHeight = 36.sp, letterSpacing = (-0.6).sp),
+      TextStyle(fontFamily = AppFont, fontWeight = FontWeight.Medium, fontSize = 27.sp, lineHeight = 36.sp, letterSpacing = (-0.6).sp),
       DARK, Modifier.align(Alignment.TopCenter).offset(y = h * 0.43f), align = TextAlign.Center,
     )
     // A looped scribble that ends in an arrow pointing down at the button.
@@ -286,11 +286,11 @@ private fun PageLook(looks: PagerState) {
         Character(l.kind, Modifier.fillMaxWidth().height(176.dp).padding(top = 6.dp))
         Column(Modifier.padding(top = 188.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
           T(l.chip, Type.caption.copy(fontSize = 10.sp, letterSpacing = 1.2.sp), DARK, Modifier.background(Color.White, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 5.dp))
-          T(l.body, TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 25.sp), DARK, Modifier.padding(top = 12.dp), align = TextAlign.Center)
+          T(l.body, TextStyle(fontFamily = AppFont, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 25.sp), DARK, Modifier.padding(top = 12.dp), align = TextAlign.Center)
         }
       }
     }
-    T(look.name, TextStyle(fontFamily = Poppins, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp, letterSpacing = (-0.4).sp), DARK, Modifier.padding(top = 10.dp))
+    T(look.name, TextStyle(fontFamily = AppFont, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 28.sp, letterSpacing = (-0.4).sp), DARK, Modifier.padding(top = 10.dp))
     T(look.sub, Type.small.copy(fontSize = 12.sp), SUB, Modifier.padding(top = 2.dp))
     Row(Modifier.padding(top = 14.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
       repeat(LOOKS.size) { i ->

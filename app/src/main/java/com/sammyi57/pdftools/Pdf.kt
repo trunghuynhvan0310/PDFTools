@@ -12,7 +12,7 @@ import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.common.PDStream
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
-import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
@@ -453,17 +453,15 @@ fun cropResize(bytes: ByteArray, mode: String, size: String, boxes: Map<String, 
   }
 }
 
-// The standard fonts are WinAnsi, so a character they cannot write is folded to its plain form or dropped, rather
-// than failing the whole document. Editors show text through this too, so what you see is what the PDF gets.
-fun winAnsi(s: String): String = s
-  .replace(Regex("[‘’]"), "'").replace(Regex("[“”]"), "\"").replace(Regex("[–—]"), "-").replace(Regex("₹\\s?"), "Rs. ")
-  .filter { it.code in 0x20..0x7E || it.code in 0xA0..0xFF }
+// Text written on a page goes through PdfFonts.clean: composed to NFC and cut to what the embedded font can draw.
+// Editors show text through this too, so what you see is what the PDF gets.
+fun pdfText(s: String, face: PdfFonts.Face = PdfFonts.Face.Regular): String = PdfFonts.clean(s, face)
 
 class WatermarkLayout(val angle: Float, val size: Float, val textWidth: Float)
 
 // Diagonal watermark geometry in page points; the tool preview uses it too so both match.
 fun watermarkLayout(text: String, width: Float, height: Float, scale: Float): WatermarkLayout {
-  val w1 = PDType1Font.HELVETICA_BOLD.getStringWidth(text) / 1000f
+  val w1 = PdfFonts.width(text, PdfFonts.Face.Bold) / 1000f
   val k = if (scale > 0) scale else 1f
   val size = min(110 * k, hypot(width, height) * 0.65f * k / w1)
   return WatermarkLayout(atan2(height, width), size, w1 * size)
@@ -474,7 +472,7 @@ private fun PDPageContentStream.alpha(doc: PDDocument, a: Float) {
   setGraphicsStateParameters(PDExtendedGraphicsState().apply { nonStrokingAlphaConstant = a; strokingAlphaConstant = a })
 }
 
-private fun PDPageContentStream.putText(font: PDType1Font, size: Float, text: String, x: Float, y: Float, deg: Float) {
+private fun PDPageContentStream.putText(font: PDFont, size: Float, text: String, x: Float, y: Float, deg: Float) {
   beginText()
   setFont(font, size)
   setTextMatrix(Matrix.getRotateInstance(Math.toRadians(deg.toDouble()), x, y))
@@ -484,10 +482,10 @@ private fun PDPageContentStream.putText(font: PDType1Font, size: Float, text: St
 
 fun watermark(bytes: ByteArray, typed: String, opacity: Float, scale: Float): ByteArray {
   if (typed.isBlank()) fail("Nhập chữ cho hình mờ.")
-  val text = winAnsi(typed).trim()
-  if (text.isEmpty()) fail("Hình mờ chỉ dùng được chữ cái Latin không dấu, số và ký hiệu thông dụng.")
+  val text = pdfText(typed, PdfFonts.Face.Bold).trim()
+  if (text.isEmpty()) fail("Font không vẽ được các ký tự này. Hãy dùng chữ cái, số và ký hiệu thông dụng.")
   return loadPdf(bytes).use { doc ->
-    val font = PDType1Font.HELVETICA_BOLD
+    val font = PdfFonts.load(doc, PdfFonts.Face.Bold)
     for (p in doc.pages) {
       // Centred on what a viewer shows (the crop box), as the preview is, not on the full media box.
       val cb = p.cropBox
@@ -510,7 +508,7 @@ fun watermark(bytes: ByteArray, typed: String, opacity: Float, scale: Float): By
   }
 }
 
-private const val DESCENT = 0.79f // Helvetica sits about a fifth of its size below the baseline
+private const val DESCENT = 0.735f // Be Vietnam Pro sits about a quarter of its size below the baseline
 
 class Placement(val x: Float, val y: Float, val w: Float, val h: Float)
 
@@ -530,11 +528,11 @@ fun placeOnPage(rect: Box, rot: Int, W: Float, H: Float): Placement {
 }
 
 fun pageNumbers(bytes: ByteArray, position: String, format: String): ByteArray = loadPdf(bytes).use { doc ->
-  val font = PDType1Font.HELVETICA
+  val font = PdfFonts.load(doc)
   val n = doc.numberOfPages
   doc.pages.forEachIndexed { i, p ->
     val label = if (format == "of") "Trang ${i + 1}/$n" else "${i + 1}"
-    val tw = font.getStringWidth(label) / 1000f * 10
+    val tw = PdfFonts.width(label) / 1000f * 10
     // Placed on the page as displayed, so a page saved sideways with /Rotate still gets its number upright at the
     // bottom: the baseline 20pt up, 28pt in from the side.
     val cb = p.cropBox
@@ -612,7 +610,7 @@ private fun hexRgb(hex: String?): Triple<Float, Float, Float> {
 
 fun fillSign(bytes: ByteArray, items: List<SignItem>, images: Map<String, ByteArray>): ByteArray = loadPdf(bytes).use { doc ->
   val embedded = HashMap<String, PDImageXObject>()
-  val font = PDType1Font.HELVETICA
+  val font = PdfFonts.load(doc)
   for (it in items) {
     if (it.page !in 0 until doc.numberOfPages) continue
     val p = doc.getPage(it.page)
@@ -644,12 +642,12 @@ fun fillSign(bytes: ByteArray, items: List<SignItem>, images: Map<String, ByteAr
       }
       continue
     }
-    val text = winAnsi(it.text)
+    val text = pdfText(it.text)
     if (text.isEmpty()) continue
     // The item's box is as tall as the font size and as wide as the text; the baseline sits a descender up from its
     // bottom edge, which is where drawing starts.
     val size = it.size * dh
-    val at = placeTurned(it.x, it.y, font.getStringWidth(text) / 1000f * size, size, size * (1 - DESCENT), it.angle, rot, W, H)
+    val at = placeTurned(it.x, it.y, PdfFonts.width(text) / 1000f * size, size, size * (1 - DESCENT), it.angle, rot, W, H)
     val (r, g, b) = hexRgb(it.color)
     doc.draw(p) {
       alpha(doc, op)

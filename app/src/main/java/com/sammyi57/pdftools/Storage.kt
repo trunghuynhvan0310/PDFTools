@@ -58,7 +58,7 @@ fun createFolder(name: String): Folder {
 }
 
 fun listFolders(): List<Folder> = rootFolder().listFiles()?.filter { it.isDirectory }?.map { Folder(it.name, it.path) }
-  ?.sortedBy { it.name.lowercase() } ?: emptyList()
+  ?.sortedWith(compareBy(viCollator) { it.name }) ?: emptyList()
 
 fun renameFolder(path: String, newName: String) {
   val clean = cleanName(newName)

@@ -87,16 +87,16 @@ val LocalPalette = staticCompositionLocalOf { LightPalette }
 /** The active palette. */
 val c: Palette @Composable get() = LocalPalette.current
 
-// Poppins throughout. It runs tall, so line heights are ~1.3x to keep accents and descenders unclipped.
-val Poppins = FontFamily(
-  Font(R.font.poppins_regular, FontWeight.Normal),
-  Font(R.font.poppins_medium, FontWeight.Medium),
-  Font(R.font.poppins_semibold, FontWeight.SemiBold),
+// Be Vietnam Pro throughout: it carries every Vietnamese letter. Line heights stay ~1.3x so stacked tone marks are not clipped.
+val AppFont = FontFamily(
+  Font(R.font.be_vietnam_regular, FontWeight.Normal),
+  Font(R.font.be_vietnam_medium, FontWeight.Medium),
+  Font(R.font.be_vietnam_semibold, FontWeight.SemiBold),
 )
 
 object Type {
   private fun s(size: Float, weight: FontWeight, line: Float? = null, spacing: Float = 0f) = TextStyle(
-    fontFamily = Poppins, fontWeight = weight, fontSize = size.sp,
+    fontFamily = AppFont, fontWeight = weight, fontSize = size.sp,
     lineHeight = (line ?: (size * 1.32f)).sp, letterSpacing = spacing.sp,
   )
   val largeTitle = s(32f, FontWeight.SemiBold, 42f, -0.5f)

@@ -49,14 +49,14 @@ import java.util.Date
 import java.util.Locale
 
 // Tokenized search: every word in the query must appear somewhere in the target. "split text" finds "Split PDF by Text".
-private fun matches(target: String, tokens: List<String>) = target.lowercase().let { t -> tokens.all { it in t } }
+private fun matches(target: String, tokens: List<String>) = fold(target).let { t -> tokens.all { it in t } }
 
 @Composable
 fun Home() {
   val nav = LocalNav.current
   var q by rememberSaveable { mutableStateOf("") }
   val files = remember(Store.version) { listAllFiles() }
-  val tokens = q.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+  val tokens = fold(q.trim()).split(Regex("\\s+")).filter { it.isNotEmpty() }
   val searching = tokens.isNotEmpty()
   val tools = if (searching) TOOLS.filter { matches("${it.title} ${it.desc}", tokens) } else TOOLS
   val found = if (searching) files.filter { matches(it.name, tokens) } else emptyList()

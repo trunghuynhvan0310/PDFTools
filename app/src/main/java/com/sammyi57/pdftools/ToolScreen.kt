@@ -471,7 +471,7 @@ private fun OrganizeTile(o: PageOrder, k: Int, size: Pair<Int, Int>?, thumb: Thu
 @Composable
 private fun WatermarkEditor(p: EditorProps) {
   val file = p.file
-  val text = winAnsi(p.value.str("text")).trim() // exactly what the stamp will say
+  val text = pdfText(p.value.str("text"), PdfFonts.Face.Bold).trim() // exactly what the stamp will say
   var page by remember(file?.path) { mutableStateOf<Triple<Pair<Float, Float>, Int, Thumb>?>(null) } // stored size, rotation, render
   LaunchedEffect(file?.path) {
     if (file == null) return@LaunchedEffect
@@ -506,7 +506,7 @@ private fun WatermarkEditor(p: EditorProps) {
             val size by animateFloatAsState(l.size * k, label = "wmSize")
             T(
               text,
-              TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = with(LocalDensity.current) { size.dp.toSp() }),
+              TextStyle(fontFamily = AppFont, fontWeight = FontWeight.SemiBold, fontSize = with(LocalDensity.current) { size.dp.toSp() }),
               Color(0xFFD1452B), // matches the stamped rgb
               Modifier.wrapContentSize(unbounded = true).graphicsLayer { this.alpha = alpha; rotationZ = rot - (l.angle * 180 / Math.PI).toFloat() },
               maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Visible,

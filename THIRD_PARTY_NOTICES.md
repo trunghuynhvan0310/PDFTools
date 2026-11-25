@@ -25,8 +25,8 @@ its own licence. Thank you to everyone who makes and maintains them.
 
 ## Fonts and icons
 
-- **Poppins** by Indian Type Foundry, [SIL Open Font License 1.1](https://openfontlicense.org/).
-- **Caveat** by Impallari Type, [SIL Open Font License 1.1](https://openfontlicense.org/).
+- **Be Vietnam Pro** by the Be Vietnam Pro Project Authors, [SIL Open Font License 1.1](https://openfontlicense.org/).
+- **Patrick Hand** by Patrick Wagesreiter, [SIL Open Font License 1.1](https://openfontlicense.org/).
 - **Material Design Icons** by [Pictogrammers](https://pictogrammers.com/), used under
   [its free licence](https://pictogrammers.com/docs/general/license/).
 

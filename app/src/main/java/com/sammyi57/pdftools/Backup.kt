@@ -647,7 +647,7 @@ object Backup {
   }
 
   private fun remember(email: String, data: DriveListing) {
-    listing = email to DriveListing(data.folders.distinct().sortedBy { it.lowercase() }, data.files.sortedByDescending { it.modified })
+    listing = email to DriveListing(data.folders.distinct().sortedWith(compareBy(viCollator) { it }), data.files.sortedByDescending { it.modified })
   }
 
   /** The last listing, shown at once instead of fetching on every visit; each sync keeps it current. */

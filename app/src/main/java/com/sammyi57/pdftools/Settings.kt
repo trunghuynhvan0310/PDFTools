@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-private const val FEEDBACK_FORM = "https://forms.gle/Fc3RHMTXAiA8fT5VA"
+private const val FEEDBACK_FORM = "https://github.com/trunghuynhvan0310/PDFTools/issues/new"
 
 @Composable
 fun SettingsTab() {
@@ -100,7 +100,7 @@ fun SettingsTab() {
       ListRow("Bộ xử lý PDF", lead = { Lead(I.codeTags) }, value = "PdfBox")
       ListRow("Chính sách quyền riêng tư & Điều khoản", lead = { Lead(I.shieldCheckOutline) }, chevron = true, onClick = { terms = true })
       ListRow(
-        "Gửi phản hồi", lead = { Lead(I.messageTextOutline) }, subtitle = "Cho chúng tôi biết cần sửa hay thêm gì. Mở một biểu mẫu ngắn.",
+        "Gửi phản hồi", lead = { Lead(I.messageTextOutline) }, subtitle = "Cho biết cần sửa hay thêm gì. Mở trang góp ý trên GitHub.",
         onClick = { openUrl(FEEDBACK_FORM) },
       ) { Icon(I.openInNew, 18.dp, c.faint) }
     }

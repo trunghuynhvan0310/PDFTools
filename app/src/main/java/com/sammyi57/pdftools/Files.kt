@@ -94,7 +94,7 @@ fun FilesTab() {
       Filter.Zip -> it.name.lowercase().endsWith(".zip")
       Filter.Recent -> System.currentTimeMillis() - it.modified < 7 * 86_400_000L
       Filter.All -> true
-    } && (needle.isEmpty() || it.name.lowercase().contains(needle))
+    } && (needle.isEmpty() || fold(it.name).contains(fold(needle)))
   }
   val filteredBytes = filtered.sumOf { it.size }
   val subtitle = when {
@@ -465,7 +465,7 @@ private fun ColumnScope.DriveFiles(query: String, folder: String?, onOpenFolder:
 
   val needle = query.trim().lowercase()
   // Searching looks everywhere (inside this folder when one is open); otherwise show just this level.
-  val matches = if (needle.isNotEmpty()) all.filter { (folder == null || it.folder == folder) && "${it.folder}/${it.name}".lowercase().contains(needle) }
+  val matches = if (needle.isNotEmpty()) all.filter { (folder == null || it.folder == folder) && fold("${it.folder}/${it.name}").contains(fold(needle)) }
   else all.filter { it.folder == (folder ?: "") }
   val shown = matches.filter {
     when (filter) {

@@ -135,12 +135,19 @@ import kotlin.math.roundToInt
 // ── Formatting ──────────────────────────────────────────────────────────────
 
 fun pad2(n: Int) = n.toString().padStart(2, '0')
+/** Lower-case with tone marks and "đ" removed, so "hop dong" finds "Hợp đồng". Search compares both sides through this. */
+fun fold(s: String): String = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+  .replace(Regex("\\p{Mn}+"), "").replace('đ', 'd').replace('Đ', 'd').lowercase()
+
+/** Orders names the Vietnamese way (d before đ, tone marks after the plain letter). */
+val viCollator: java.text.Collator = java.text.Collator.getInstance(Locale("vi", "VN"))
+
 fun fmtTime(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 fun fmtSize(b: Long?): String = when {
   b == null -> ""
   b < 1024 -> "$b B"
   b < 1048576 -> "${(b / 1024.0).roundToInt()} KB"
-  else -> "%.1f MB".format(Locale.US, b / 1048576.0)
+  else -> "%.1f MB".format(Locale("vi", "VN"), b / 1048576.0)
 }
 
 // dd/mm/yyyy everywhere a date is shown.

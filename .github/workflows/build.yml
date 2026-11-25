@@ -36,6 +36,26 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Prepare signing key (only when the secrets exist)
+        env:
+          STORE_B64: ${{ secrets.UPLOAD_STORE_BASE64 }}
+          STORE_PW: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          if [ -n "$STORE_B64" ]; then
+            echo "$STORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            {
+              echo "ORG_GRADLE_PROJECT_PDF_TOOLS_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.jks"
+              echo "ORG_GRADLE_PROJECT_PDF_TOOLS_UPLOAD_STORE_PASSWORD=$STORE_PW"
+              echo "ORG_GRADLE_PROJECT_PDF_TOOLS_UPLOAD_KEY_ALIAS=$KEY_ALIAS"
+              echo "ORG_GRADLE_PROJECT_PDF_TOOLS_UPLOAD_KEY_PASSWORD=$KEY_PW"
+            } >> "$GITHUB_ENV"
+            echo "Signing with the upload key."
+          else
+            echo "No upload key secrets: signing with the debug key."
+          fi
+
       - name: Build release APK
         run: |
           chmod +x gradlew

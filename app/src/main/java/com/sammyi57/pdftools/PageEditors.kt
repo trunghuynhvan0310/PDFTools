@@ -458,9 +458,9 @@ fun FillSignEditor(p: EditorProps) {
         // Opacity on the content only, so a faded item's selection frame stays easy to see.
         Box(Modifier.graphicsLayer { alpha = it.opacity }) {
           if (it.kind == "text") {
-            // Android's sans-serif is the closest system font to the Helvetica the PDF gets.
+            // The same Be Vietnam Pro the PDF embeds, so the preview matches the page.
             val px = it.size * f.hPx
-            T(it.text, TextStyle(fontFamily = FontFamily.SansSerif, fontSize = with(d) { px.toSp() }, lineHeight = with(d) { (px * 1.16f).toSp() }), hexColor(it.color ?: INK), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Visible)
+            T(it.text, TextStyle(fontFamily = AppFont, fontSize = with(d) { px.toSp() }, lineHeight = with(d) { (px * 1.16f).toSp() }), hexColor(it.color ?: INK), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Visible)
           } else {
             val bmp = rememberBitmap(it.uri, 800)
             Box(Modifier.size(f.w * it.w, f.h * it.h)) { if (bmp != null) Image(bmp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
@@ -547,10 +547,10 @@ fun FillSignEditor(p: EditorProps) {
       if (t == -1) "Thêm chữ" else "Sửa chữ", if (t >= 0) items.getOrNull(t)?.text ?: "" else "", placeholder = "Nhập nội dung cần đặt lên trang",
       submitLabel = if (t == -1) "Thêm" else "Lưu", onClose = { typing = null },
     ) { typed ->
-      // The page gets Helvetica, which only writes Latin text: store what it can write, and say what it can't.
-      val text = winAnsi(typed).trim()
-      if (text.isEmpty()) return@PromptDialog p.onError("Chữ trên trang chỉ dùng được chữ cái Latin không dấu, số và ký hiệu thông dụng.")
-      if (Regex("[^\\x20-\\x7E\\xA0-\\xFF‘’“”–—₹]").containsMatchIn(typed)) p.onError("Một số ký tự không thể ghi lên trang PDF nên đã bị bỏ qua.")
+      // The page gets Be Vietnam Pro: store what it can draw, and say what it can't.
+      val text = pdfText(typed).trim()
+      if (text.isEmpty()) return@PromptDialog p.onError("Font không vẽ được các ký tự này. Hãy dùng chữ cái, số và ký hiệu thông dụng.")
+      if (text.length < java.text.Normalizer.normalize(typed.trim(), java.text.Normalizer.Form.NFC).length) p.onError("Một số ký tự không thể ghi lên trang PDF nên đã bị bỏ qua.")
       if (t == -1) add(SignItem(pages.index, "text", 0.1f, 0.1f, size = TEXT_SIZE, text = text)) else edit(t) { it.copy(text = text) }
     }
   }

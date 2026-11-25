@@ -55,9 +55,12 @@ Ghim các công cụ hay dùng lên đầu Trang chủ. Mọi công cụ đều 
 
 Mọi công cụ, máy quét và OCR chạy trên thiết bị. Tệp chỉ rời khỏi điện thoại nếu bạn bật đồng bộ Google Drive, và chỉ tới Drive của chính bạn. Không quảng cáo, không phân tích, không tài khoản.
 
-## Giới hạn đã biết
+## Điểm riêng của bản tiếng Việt
 
-Chữ ký, chữ thêm vào PDF, hình mờ và số trang chỉ dùng được chữ Latin không dấu, do giới hạn font PDF của PdfBox.
+- Font giao diện là Be Vietnam Pro, hiển thị đủ mọi chữ tiếng Việt.
+- Chữ điền vào PDF, hình mờ, số trang và lớp chữ OCR dùng font Be Vietnam Pro nhúng trong PDF, nên giữ nguyên dấu thanh và tìm kiếm được.
+- Tìm kiếm không phân biệt dấu: gõ "hop dong" vẫn ra "Hợp đồng". Tên tệp và thư mục sắp xếp theo thứ tự tiếng Việt.
+- Nén PDF theo dung lượng (ví dụ 1, 2, 5 MB) để nộp lên cổng dịch vụ công, thuế điện tử, BHXH.
 
 ## Công nghệ
 
@@ -82,7 +85,9 @@ Chữ ký, chữ thêm vào PDF, hình mờ và số trang chỉ dùng được 
 ./gradlew :app:assembleRelease      # APK release ở app/build/outputs/apk/release
 ```
 
-Nếu không có khóa upload riêng, bản release được ký bằng khóa debug. Đồng bộ Google Drive cần Android OAuth client cho package name và SHA-1 chữ ký của bạn trong Google Cloud.
+Nếu không có khóa upload riêng, bản release được ký bằng khóa debug.
+
+**Ký bằng khóa riêng trên GitHub:** tạo 4 secret trong Settings → Secrets and variables → Actions: `UPLOAD_STORE_BASE64` (nội dung base64 của file `.jks`), `UPLOAD_STORE_PASSWORD`, `UPLOAD_KEY_ALIAS`, `UPLOAD_KEY_PASSWORD`. Có đủ secret thì workflow tự ký bằng khóa của bạn; thiếu thì dùng khóa debug. Đừng bao giờ commit file `.jks`. Đồng bộ Google Drive cần Android OAuth client cho package name và SHA-1 chữ ký của bạn trong Google Cloud.
 
 ## Cấu trúc dự án
 

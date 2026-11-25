@@ -56,7 +56,7 @@ fun AppFilesPicker(multi: Boolean, already: List<String>, onClose: () -> Unit, o
   else listFolders().map { f -> f.name to all.count { it.folder == f.name } }
 
   val needle = query.trim().lowercase()
-  val shown = if (needle.isNotEmpty()) all.filter { it.name.lowercase().contains(needle) } else all.filter { it.folder == (folder ?: "") }
+  val shown = if (needle.isNotEmpty()) all.filter { fold(it.name).contains(fold(needle)) } else all.filter { it.folder == (folder ?: "") }
 
   BackHandler {
     when {

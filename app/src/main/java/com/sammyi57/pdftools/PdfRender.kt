@@ -23,7 +23,6 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
-import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
@@ -93,8 +92,8 @@ private fun PdfRenderer.Page.writeJpeg(width: Int, quality: Int, sink: OutputStr
   bitmap.recycle()
 }
 
-// The invisible text layer is written in Helvetica, which only encodes WinAnsi.
-private fun ocrText(s: String) = winAnsi(s).trim()
+// The invisible text layer is written in the embedded Be Vietnam Pro, so tone marks are kept and searchable.
+private fun ocrText(s: String) = pdfText(s).trim()
 
 // Maps the page as displayed (origin bottom-left, /Rotate applied) onto the page as stored.
 private fun displayMatrix(box: PDRectangle, rot: Int): Matrix {
@@ -422,8 +421,7 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
                 .mapNotNull { line ->
                   val box = line.boundingBox ?: return@mapNotNull null
                   val text = ocrText(line.text)
-                  // getStringWidth rejects anything Helvetica can't write, so a bad line is dropped here.
-                  val width = try { PDType1Font.HELVETICA.getStringWidth(text) } catch (_: Exception) { 0f }
+                  val width = if (text.isEmpty()) 0f else PdfFonts.width(text)
                   if (text.isEmpty() || width <= 0f || box.width() <= 0 || box.height() <= 0) null
                   else Triple(text, RectF(box.left / bw.toFloat(), box.top / bh.toFloat(), box.right / bw.toFloat(), box.bottom / bh.toFloat()), width)
                 }
@@ -437,13 +435,14 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
           val box = page.cropBox
           val pw = if (rot % 180 == 0) box.width else box.height
           val ph = if (rot % 180 == 0) box.height else box.width
+          val ocrFont = PdfFonts.load(doc)
           PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
             cs.transform(displayMatrix(box, rot))
             cs.beginText()
             cs.setRenderingMode(RenderingMode.NEITHER) // there for search and selection only, never drawn
             for ((text, rect, width) in lines) {
               val size = ((rect.bottom - rect.top) * ph).coerceAtLeast(1f)
-              cs.setFont(PDType1Font.HELVETICA, size)
+              cs.setFont(ocrFont, size)
               // Stretch the line to the width of the words underneath, so a selection lands on them.
               cs.setHorizontalScaling((rect.right - rect.left) * pw / (width / 1000f * size) * 100f)
               cs.setTextMatrix(Matrix.getTranslateInstance(rect.left * pw, ph - rect.bottom * ph))

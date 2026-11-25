@@ -98,7 +98,7 @@ private object O {
   // "level" (or unset, in older drafts and workflow steps) picks a strength; "size" squeezes until it fits a limit.
   val squeeze = seg("mode", "Nén theo", listOf("level" to "Mức độ", "size" to "Dưới một dung lượng"), "level")
   val quality = seg("quality", "Mức nén", listOf("80" to "Nhẹ", "60" to "Cân bằng", "35" to "Mạnh"), "60") { it.str("mode") != "size" }
-  val target = OptDef.Text("targetMB", "Dưới (MB)", "2", "2", KeyboardType.Decimal, Regex("[^0-9.]")) { it.str("mode") == "size" }
+  val target = OptDef.Text("targetMB", "Dưới (MB), ví dụ 1, 2 hoặc 5", "2", "2", KeyboardType.Decimal, Regex("[^0-9.]")) { it.str("mode") == "size" }
   val wmText = text("text", "Chữ hình mờ", "CONFIDENTIAL", "CONFIDENTIAL")
   val wmScale = seg("scale", "Kích thước", listOf("0.6" to "Nhỏ", "1" to "Vừa", "1.4" to "Lớn"), "1")
   val opacity = seg("opacity", "Độ đậm", listOf("0.1" to "10%", "0.2" to "20%", "0.35" to "35%"), "0.2")

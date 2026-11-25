@@ -143,7 +143,7 @@ fun PhoneFiles(query: String) {
   }
   val needle = query.trim().lowercase()
   val hits = all.filter {
-    (needle.isEmpty() || it.name.lowercase().contains(needle)) && when (filter) {
+    (needle.isEmpty() || fold(it.name).contains(fold(needle))) && when (filter) {
       PhoneFilter.All -> true
       PhoneFilter.Recent -> System.currentTimeMillis() - it.modified < 7 * 86_400_000L
       PhoneFilter.Large -> it.size >= 5_000_000L
