@@ -34,6 +34,7 @@ data class ProcessOptions(
   val contrast: Float = 0f,
   val strokes: List<Stroke> = emptyList(),
   val maxSize: Int = 2400,
+  val paper: Boolean = false, // snap the straightened page to the nearest standard sheet (A4, Letter, Legal)
   val dest: String? = null, // file to write; a new cache file when omitted
 )
 
@@ -161,7 +162,7 @@ object DocVision {
     Imgproc.cvtColor(rgba, img, Imgproc.COLOR_RGBA2RGB)
     rgba.release()
 
-    o.corners?.takeIf { it.size == 8 }?.let { c -> img = warp(img, DoubleArray(8) { c[it].toDouble() }) }
+    o.corners?.takeIf { it.size == 8 }?.let { c -> img = warp(img, DoubleArray(8) { c[it].toDouble() }, o.paper) }
     when (((o.rotation % 360) + 360) % 360) {
       90 -> Core.rotate(img, img, Core.ROTATE_90_CLOCKWISE)
       180 -> Core.rotate(img, img, Core.ROTATE_180)
@@ -186,14 +187,19 @@ object DocVision {
     return result
   }
 
-  private fun warp(src: Mat, c: DoubleArray): Mat {
+  private fun warp(src: Mat, c: DoubleArray, paper: Boolean): Mat {
     val w = src.cols().toDouble()
     val h = src.rows().toDouble()
     // Re-sort in image space so a crop dragged "inside out" still comes out upright.
     val p = PageDetector.order(Array(4) { Point(c[it * 2].coerceIn(0.0, 1.0) * w, c[it * 2 + 1].coerceIn(0.0, 1.0) * h) })
     val dist = { a: Point, b: Point -> hypot(a.x - b.x, a.y - b.y) }
-    val outW = max(dist(p[0], p[1]), dist(p[3], p[2])).coerceAtLeast(16.0)
-    val outH = max(dist(p[0], p[3]), dist(p[1], p[2])).coerceAtLeast(16.0)
+    // The photo is never square to the sheet, so edge lengths lie about its shape. Recover the true proportions from the
+    // perspective, and for documents snap them to the nearest standard sheet.
+    var aspect = PaperFit.trueAspect(doubleArrayOf(p[0].x, p[0].y, p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y), w, h)
+    if (paper) aspect = PaperFit.snap(aspect)
+    val (outW, outH) = PaperFit.outputSize(
+      max(dist(p[0], p[1]), dist(p[3], p[2])), max(dist(p[0], p[3]), dist(p[1], p[2])), aspect,
+    )
     val m = Imgproc.getPerspectiveTransform(
       MatOfPoint2f(*p),
       MatOfPoint2f(Point(0.0, 0.0), Point(outW, 0.0), Point(outW, outH), Point(0.0, outH)),

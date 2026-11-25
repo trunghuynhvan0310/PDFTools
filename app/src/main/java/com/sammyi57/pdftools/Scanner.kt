@@ -109,7 +109,7 @@ fun Scanner(id: String?) {
         val key = "${p.id}:$i:${sh.rev}"
         if (!rendering.add(key)) return@forEachIndexed
         scope.launch {
-          val r = runCatching { renderShot(doc.id, sh) }.getOrNull()
+          val r = runCatching { renderShot(doc.id, sh, p.kind) }.getOrNull()
           doc = doc.copy(pages = doc.pages.map { q ->
             if (q.id != p.id) q else q.copy(shots = q.shots.mapIndexed { j, x ->
               when {
@@ -265,7 +265,7 @@ private fun Capture(
     val shot = withContext(Dispatchers.IO) { makeShot(doc.id, photo, as_) }
     if (as_ == "id" && front == null) front = shot
     else {
-      onAdd(ScanPage(retake?.id ?: uid(), as_, retake?.size ?: "fit", if (as_ == "id" && front != null) listOf(front!!, shot) else listOf(shot)))
+      onAdd(ScanPage(retake?.id ?: uid(), as_, retake?.size ?: "auto", if (as_ == "id" && front != null) listOf(front!!, shot) else listOf(shot)))
       front = null
       if (retake != null) onReview()
     }

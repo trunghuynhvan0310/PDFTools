@@ -689,7 +689,8 @@ private const val MARGIN = 24f
 /** `kind`: doc | book | id | card | whiteboard. `size`: fit, or e.g. "A4-portrait". `imgs`: each image's (w, h). */
 fun layoutScanPage(kind: String, size: String, imgs: List<Pair<Int, Int>>): List<Sheet> {
   val (fw, fh) = imgs.first().let { it.first.toFloat() to it.second.toFloat() }
-  val paper: Pair<Float, Float>? = if (size == "fit") null else {
+  val auto = size == "auto" // a document photo straightened to a standard sheet goes on that sheet, otherwise as "fit"
+  val paper: Pair<Float, Float>? = if (size == "fit" || auto) null else {
     val (name, orient) = size.split('-').let { it[0] to it.getOrElse(1) { "portrait" } }
     val (a, b) = SIZES[name] ?: A4
     if (orient == "landscape") b to a else a to b
@@ -712,6 +713,15 @@ fun layoutScanPage(kind: String, size: String, imgs: List<Pair<Int, Int>>): List
         Placed(i, FULL, (W - cw) / 2, if (i == 0) H / 2 + 12 else H / 2 - 12 - h, cw, h)
       }))
     }
-    else -> listOf(single(FULL, fw, fh))
+    else -> {
+      val m = if (auto && kind == "doc") PaperFit.matchSize(fw.toInt(), fh.toInt(), 0.06) else null
+      if (m == null) listOf(single(FULL, fw, fh))
+      else {
+        val (a, b) = SIZES.getValue(m.name)
+        val (W, H) = if (m.landscape) b to a else a to b
+        val k = min(W / fw, H / fh)
+        listOf(Sheet(W, H, listOf(Placed(0, FULL, (W - fw * k) / 2, (H - fh * k) / 2, fw * k, fh * k))))
+      }
+    }
   }
 }

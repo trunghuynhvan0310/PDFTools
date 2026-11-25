@@ -221,7 +221,11 @@ fun Review(
           "resize" -> Column {
             SheetHead("Khổ trang") { ApplyAll(current.size) { editPages(pages.map { it.id }) { it.copy(size = current.size) } } }
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-              PAGE_SIZES.forEach { (size, label) -> DarkChip(label, current.size == size) { editPages(targets) { it.copy(size = size) } } }
+              val sheet = current.shots[0].let { PaperFit.matchSize(it.shownW, it.shownH, 0.06) }
+              PAGE_SIZES.forEach { (size, label) ->
+                val shown = if (size == "auto" && current.kind == "doc" && sheet != null) "Tự động · ${PaperFit.label(sheet)}" else label
+                DarkChip(shown, current.size == size) { editPages(targets) { it.copy(size = size) } }
+              }
             }
           }
         }
@@ -626,7 +630,7 @@ private fun DrawEditor(page: ScanPage, mode: String, onCancel: () -> Unit, onDon
     base = null
     var made: String? = null
     try {
-      base = processImage(shot.src, ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, maxSize = 1600)).also { made = it.path }
+      base = processImage(shot.src, ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, maxSize = 1600, paper = page.kind == "doc")).also { made = it.path }
       kotlinx.coroutines.awaitCancellation()
     } finally {
       deleteQuietly(made)
