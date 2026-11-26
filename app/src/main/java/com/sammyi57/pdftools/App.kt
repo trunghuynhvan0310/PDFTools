@@ -88,6 +88,7 @@ import java.io.File
 @Serializable object MainRoute
 @Serializable data class ToolRoute(val id: String, val resume: Boolean = false)
 @Serializable data class ScanRoute(val id: String = "")
+@Serializable object LedgerRoute
 
 enum class Tab { Tools, Files, Settings }
 
@@ -109,6 +110,10 @@ class Nav(private val controller: NavHostController) {
     if (System.currentTimeMillis() - scanAt < 1000) return
     scanAt = System.currentTimeMillis()
     controller.navigate(ScanRoute(id ?: "")) { launchSingleTop = true }
+  }
+
+  fun ledger() {
+    controller.navigate(LedgerRoute) { launchSingleTop = true }
   }
 
   /** Leaves the current screen; taps queued while a heavy job ran can't pop past the tabs. */
@@ -214,6 +219,7 @@ private fun Root() {
             enterTransition = { slideInVertically(tween(440, easing = Emph)) { it } },
             popExitTransition = { slideOutVertically(tween(340, easing = Emph)) { it } },
           ) { entry -> Scanner(entry.toRoute<ScanRoute>().id.ifEmpty { null }) }
+          composable<LedgerRoute> { CompositionLocalProvider(LocalAnim provides this) { LedgerScreen() } }
           composable<ViewerRoute> { entry -> entry.toRoute<ViewerRoute>().let { PdfViewerScreen(it.path, it.name) } }
         }
       }

@@ -70,6 +70,15 @@ fun Home() {
 
     if (!searching) {
       Stagger(0) { Hero(files) { nav.scan() } }
+      Stagger(1) {
+        Group(Modifier.padding(top = 14.dp)) {
+          ListRow(
+            "Sổ công văn", first = true, chevron = true, lead = { Icon(I.fileDocumentEditOutline, 24.dp, c.accent) },
+            subtitle = if (Ledger.items.isEmpty()) "Quét công văn, xuất bảng thống kê Excel" else "${Ledger.items.size} văn bản · xuất Excel",
+            onClick = { nav.ledger() },
+          )
+        }
+      }
       if (files.isNotEmpty()) Stagger(1) { RecentPanel(files.take(3)) { nav.show(Tab.Files) } }
       Row(
         Modifier.padding(top = 22.dp).horizontalScroll(rememberScrollState()),

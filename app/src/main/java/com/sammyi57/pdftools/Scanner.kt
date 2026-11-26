@@ -127,6 +127,7 @@ fun Scanner(id: String?) {
     }
   }
 
+  var gov by remember { mutableStateOf<Triple<List<GovDoc>, List<String>, PdfRef>?>(null) }
   val back = { if (!left.value) { left.value = true; nav.back() } }
   val leave = { if (doc.isDirty() && (doc.pages.isNotEmpty() || doc.saved != null)) asking = true else back() }
   BackHandler(!asking && !recentOpen && draft == null) {
@@ -137,8 +138,15 @@ fun Scanner(id: String?) {
     try {
       val saved = exportPdf(doc)
       doc = saved
-      back()
-      saved.pdf?.let { openFile(it.path, it.name) }
+      val pdf = saved.pdf
+      if (pdf != null && saved.pages.isNotEmpty() && saved.pages.all { it.kind == "gov" }) {
+        // A Công văn scan: read the printed parts, then let the person check them before they go in the ledger.
+        val (found, paths) = govAnalyze(saved.pages.map { it.shots.first() })
+        gov = Triple(found, paths, pdf)
+      } else {
+        back()
+        pdf?.let { openFile(it.path, it.name) }
+      }
     } catch (e: Exception) {
       failure = e.message ?: "Đã xảy ra lỗi."
     }
@@ -167,6 +175,13 @@ fun Scanner(id: String?) {
     }
   }
 
+  gov?.let { (found, paths, pdf) ->
+    GovConfirm(found, paths, pathOf(pdf.path)) { n ->
+      gov = null
+      back()
+      if (n == 0) openFile(pathOf(pdf.path), pdf.name) else nav.ledger()
+    }
+  }
   if (recentOpen) RecentScans({ recentOpen = false }) { picked -> doc = picked; capture = false; recentOpen = false; draft = null }
 
   if (asking) {
@@ -200,7 +215,7 @@ fun Scanner(id: String?) {
 
 // ── Capture ─────────────────────────────────────────────────────────────────
 
-private val MODES = listOf("whiteboard", "book", "doc", "id", "card")
+private val MODES = listOf("whiteboard", "book", "doc", "gov", "id", "card")
 private const val STEADY_MS = 1100L // corners must hold still this long before auto-capture fires
 private const val NOT_FOUND_MS = 6000L
 private fun moved(a: List<Float>, b: List<Float>) = a.indices.maxOf { abs(a[it] - b[it]) }

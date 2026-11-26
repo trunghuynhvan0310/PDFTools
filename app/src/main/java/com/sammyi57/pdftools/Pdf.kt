@@ -714,7 +714,7 @@ fun layoutScanPage(kind: String, size: String, imgs: List<Pair<Int, Int>>): List
       }))
     }
     else -> {
-      val m = if (auto && kind == "doc") PaperFit.matchSize(fw.toInt(), fh.toInt(), 0.06) else null
+      val m = if (auto && isPaperKind(kind)) PaperFit.matchSize(fw.toInt(), fh.toInt(), 0.06) else null
       if (m == null) listOf(single(FULL, fw, fh))
       else {
         val (a, b) = SIZES.getValue(m.name)

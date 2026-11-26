@@ -60,7 +60,7 @@ data class ScanDoc(
   val saved: SavedScan? = null, // state at the last Save PDF, for "Discard changes"
 )
 
-val KIND_LABEL = linkedMapOf("whiteboard" to "Bảng trắng", "book" to "Sách", "doc" to "Tài liệu", "id" to "Thẻ ID", "card" to "Danh thiếp")
+val KIND_LABEL = linkedMapOf("whiteboard" to "Bảng trắng", "book" to "Sách", "doc" to "Tài liệu", "gov" to "Công văn", "id" to "Thẻ ID", "card" to "Danh thiếp")
 val FILTERS = listOf("original" to "Màu gốc", "auto" to "Màu tự động", "light" to "Chữ sáng", "gray" to "Thang xám", "whiteboard" to "Bảng trắng")
 val PAGE_SIZES = listOf(
   "auto" to "Tự động (khớp khổ giấy)", "fit" to "Kích thước gốc", "A4-portrait" to "A4 dọc", "A4-landscape" to "A4 ngang", "A5-portrait" to "A5 dọc",
@@ -100,11 +100,14 @@ fun makeShot(docId: String, photo: Photo, kind: String): Shot {
   return Shot(dest.path, photo.width, photo.height, photo.corners).withDefaults(kind, photo.corners)
 }
 
+/** Kinds shot as a sheet of paper: straightened and snapped to a standard size. */
+fun isPaperKind(kind: String) = kind == "doc" || kind == "gov"
+
 /** Renders the shot's settings to a fresh file (a new name each time, so an image never shows a stale copy). */
 suspend fun renderShot(docId: String, shot: Shot, kind: String = "doc"): Shot = withContext(Dispatchers.Default) {
   val r = DocVision.process(
     appContext, shot.src,
-    ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, shot.strokes, 2400, kind == "doc", File(dirOf(docId), "out-${uid()}.jpg").path),
+    ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, shot.strokes, 2400, isPaperKind(kind), File(dirOf(docId), "out-${uid()}.jpg").path),
   )
   shot.copy(out = r.path, outW = r.width, outH = r.height, bg = r.bg, outRev = shot.rev)
 }

@@ -162,6 +162,7 @@ fun saveTemp(name: String, bytes: ByteArray): File {
 private val MIME = mapOf(
   "pdf" to "application/pdf", "zip" to "application/zip", "jpg" to "image/jpeg",
   "docx" to "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "xlsx" to "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
 
 fun mimeOf(name: String) = MIME[name.substringAfterLast('.', "").lowercase()] ?: "application/octet-stream"
