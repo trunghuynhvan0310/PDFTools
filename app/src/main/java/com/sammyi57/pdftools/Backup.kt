@@ -179,21 +179,47 @@ object Backup {
   }
 
   // Streams a local file into Drive: into `id` when it exists, otherwise a new file under `parent`.
+  /**
+   * One multipart request carries the name, the type and the bytes together, so the file never exists in Drive empty or
+   * with the wrong type. The size Drive reports is checked against the file; a mismatch is retried like a dropped line.
+   */
   private suspend fun uploadToDrive(token: String, f: File, name: String, parent: String, existing: String? = null, mime: String = "application/pdf"): Pair<String, String> {
-    val id = existing ?: call(token, "$API/files?fields=id", "POST", JSONObject().put("name", name).put("mimeType", mime).put("parents", org.json.JSONArray().put(parent))).getString("id")
-    val meta = retry {
-      val conn = open(token, "$UPLOAD/files/$id?uploadType=media&fields=id,modifiedTime,size", "PATCH")
-      try {
+    val boundary = "pdftools-${System.nanoTime()}"
+    val meta = JSONObject().put("mimeType", mime).apply {
+      if (existing == null) put("name", name).put("parents", org.json.JSONArray().put(parent)) // an update keeps the name Drive has
+    }
+    val head = "--$boundary\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n$meta\r\n--$boundary\r\nContent-Type: $mime\r\n\r\n".toByteArray()
+    val tail = "\r\n--$boundary--".toByteArray()
+    val url = if (existing == null) "$UPLOAD/files?uploadType=multipart&fields=id,modifiedTime,size" else "$UPLOAD/files/$existing?uploadType=multipart&fields=id,modifiedTime,size"
+    val meta2 = retry {
+      val len = f.length()
+      val conn = open(token, url, if (existing == null) "POST" else "PATCH")
+      val res = try {
         conn.doOutput = true
-        conn.setRequestProperty("Content-Type", mime)
-        conn.setFixedLengthStreamingMode(f.length())
-        conn.outputStream.use { out -> f.inputStream().use { it.copyTo(out, 256 * 1024) } }
+        conn.setRequestProperty("Content-Type", "multipart/related; boundary=$boundary")
+        conn.setFixedLengthStreamingMode(head.size + len + tail.size)
+        conn.outputStream.use { out ->
+          out.write(head)
+          f.inputStream().use { input ->
+            val buf = ByteArray(256 * 1024)
+            var left = len
+            while (left > 0) {
+              val n = input.read(buf, 0, minOf(buf.size.toLong(), left).toInt())
+              if (n < 0) throw IOException("File shrank while uploading")
+              out.write(buf, 0, n)
+              left -= n
+            }
+          }
+          out.write(tail)
+        }
         JSONObject(conn.text())
       } finally {
         conn.disconnect()
       }
+      if (res.optString("size", "-1").toLongOrNull().let { it != null && it >= 0 && it != len }) throw IOException("Drive stored ${res.optString("size")} bytes of $len")
+      res
     }
-    return meta.getString("id") to meta.getString("modifiedTime")
+    return meta2.getString("id") to meta2.getString("modifiedTime")
   }
 
   // `modified` (Drive's modifiedTime) becomes the file's date, so Files sorts it by when it was made, not downloaded.
@@ -209,6 +235,11 @@ object Backup {
         } finally {
           conn.disconnect()
         }
+      }
+      // A PDF that doesn't start like one is an error page Drive sent instead: never keep it under a .pdf name.
+      if (dest.name.lowercase().endsWith(".pdf")) {
+        val head = tmp.inputStream().use { s -> ByteArray(1024).let { b -> String(b, 0, maxOf(0, s.read(b)), Charsets.ISO_8859_1) } }
+        if (!head.contains("%PDF")) throw DriveError(502, "not a PDF")
       }
       if (dest.exists()) dest.delete() // only replaced once the download fully succeeded
       if (!tmp.renameTo(dest)) tmp.copyTo(dest, true)

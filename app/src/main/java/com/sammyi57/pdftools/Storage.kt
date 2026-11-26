@@ -9,9 +9,11 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -39,6 +41,44 @@ object Store {
   /** For changes sync itself made (downloads, deletions from Drive): show them, without syncing again. */
   fun refreshOnly() {
     version++
+  }
+}
+
+/**
+ * A folder on the phone, picked once, that every newly saved file is also copied into. Saved files live in the app's own
+ * storage, which no other app (not even Files) can see; this is how they show up in the phone's own folders.
+ */
+object ExportDir {
+  private val prefs get() = appContext.getSharedPreferences("export", android.content.Context.MODE_PRIVATE)
+  var uri by mutableStateOf(prefs.getString("tree", null))
+    private set
+  val name: String? get() = uri?.let { Uri.decode(it).split('/', ':').lastOrNull { p -> p.isNotEmpty() } }
+
+  /** Opens the folder picker; true when a folder was chosen. */
+  suspend fun choose(): Boolean {
+    val tree = awaitResult(ActivityResultContracts.OpenDocumentTree(), null) ?: return false
+    runCatching { appContext.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+    prefs.edit().putString("tree", tree.toString()).apply()
+    uri = tree.toString()
+    return true
+  }
+
+  fun clear() {
+    prefs.edit().remove("tree").apply()
+    uri = null
+  }
+
+  /** Copies a file just saved into the folder, in the background; a folder that has gone away just skips it. */
+  fun mirror(f: File) {
+    val tree = uri?.let(Uri::parse) ?: return
+    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+      runCatching {
+        val cr = appContext.contentResolver
+        val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        val doc = DocumentsContract.createDocument(cr, parent, mimeOf(f.name), f.name) ?: return@runCatching
+        cr.openOutputStream(doc)?.use { out -> f.inputStream().use { it.copyTo(out) } }
+      }
+    }
   }
 }
 
@@ -121,6 +161,7 @@ private fun File.toSaved() = Saved(name, path, length(), lastModified())
 fun saveBytes(base: String, ext: String, bytes: ByteArray, folder: String? = null): Saved {
   val f = freeFile(base, ext, folder?.let(::File) ?: rootFolder())
   f.writeBytes(bytes)
+  ExportDir.mirror(f)
   Store.changed()
   return f.toSaved()
 }
@@ -129,6 +170,7 @@ fun saveBytes(base: String, ext: String, bytes: ByteArray, folder: String? = nul
 fun adoptTemp(tmp: File, base: String, ext: String, folder: String? = null): Saved {
   val f = freeFile(base, ext, folder?.let(::File) ?: rootFolder())
   if (!tmp.renameTo(f)) { tmp.copyTo(f); tmp.delete() }
+  ExportDir.mirror(f)
   Store.changed()
   return f.toSaved()
 }

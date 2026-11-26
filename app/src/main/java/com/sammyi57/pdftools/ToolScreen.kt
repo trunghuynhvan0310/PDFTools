@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -119,7 +120,10 @@ fun ToolScreen(id: String, resume: Boolean) {
     return
   }
   val scope = rememberCoroutineScope()
-  val draft = remember { Drafts.current?.takeIf { resume && it.tool == tool.id } }
+  // Opening a preview leaves this screen, so coming back builds it again: a draft saved for this visit is picked up
+  // again ("hadWork" survives that), so the chosen PDFs and options don't have to be set up twice.
+  var hadWork by rememberSaveable { mutableStateOf(false) }
+  val draft = remember { Drafts.current?.takeIf { (resume || hadWork) && it.tool == tool.id } }
   var files by remember { mutableStateOf<List<Picked>>(draft?.files?.map { it.toPicked() } ?: emptyList()) }
   var opts by remember { mutableStateOf<Opts>(draft?.opts ?: defaults(tool.opts)) }
   var busy by remember { mutableStateOf("") } // "run" | "preview"
@@ -139,6 +143,7 @@ fun ToolScreen(id: String, resume: Boolean) {
   LaunchedEffect(files, opts, results) {
     if (files.isNotEmpty() && results.isEmpty()) {
       owns.value = true
+      hadWork = true
       val kept = if (opts.containsKey("password")) opts.with("password", "") else opts // never on disk
       Drafts.set(ToolDraft(tool.id, files.map { it.toDraft() }, kept))
     } else if (owns.value) Drafts.set(null)
@@ -312,10 +317,10 @@ fun ToolScreen(id: String, resume: Boolean) {
     }
   }
   naming?.let { (outs, name) ->
-    // Only Discard throws the result away; back or a stray tap outside keeps it under the suggested name.
+    // Only the buttons decide: a tap outside or back closes the dialog like "Bỏ" and saves nothing.
     PromptDialog(
       "Lưu với tên", name, if (outs.size > 1) "Mỗi tệp trong ${outs.size} tệp sẽ bắt đầu bằng tên này." else "Lưu trong Tệp.", "Tên tệp", "Lưu", "Bỏ",
-      onClose = { naming = null }, onDismiss = { saveAs(outs, name) }, onSubmit = { saveAs(outs, it) },
+      onClose = { naming = null }, onSubmit = { saveAs(outs, it) },
     )
   }
 }

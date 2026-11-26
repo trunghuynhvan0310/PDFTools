@@ -38,6 +38,7 @@ fun SettingsTab() {
   var driveConfirm by remember { mutableStateOf(false) }
   var wiping by remember { mutableStateOf(false) }
   var terms by remember { mutableStateOf(false) }
+  var exportMenu by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
   // Drive goes first: if it fails, the phone keeps its files and the error shows under Google Drive.
   val wipeBoth = {
@@ -66,9 +67,23 @@ fun SettingsTab() {
       ListRow("Tệp đã lưu", first = true, lead = { Lead(I.folderOutline) }, value = files.size.toString())
       ListRow("Dung lượng đã dùng", lead = { Lead(I.harddisk) }, value = fmtSize(files.sumOf { it.size }))
       ListRow(
+        "Sao chép ra thư mục trên máy", lead = { Lead(I.folderOutline) }, chevron = true, value = ExportDir.name ?: "Tắt",
+        subtitle = if (ExportDir.uri == null) "Hiện file chỉ nằm trong ứng dụng. Bật để chép thêm ra một thư mục bạn chọn." else "Mỗi file mới lưu được chép thêm vào thư mục này.",
+        onClick = { exportMenu = true },
+      )
+      ListRow(
         "Xóa tất cả tệp đã lưu", lead = { Lead(I.trashCanOutline, true) }, danger = true, value = if (wiping) "Đang xóa…" else null,
         onClick = if (files.isEmpty() || wiping) null else ({ if (Backup.hasDriveCopies(files.map { it.path })) clearChoice = true else clearConfirm = true }),
       )
+    }
+
+    if (exportMenu) {
+      AppDialog({ exportMenu = false }, "Sao chép ra thư mục trên máy", "File lưu trong ứng dụng không hiện ở các ứng dụng khác. Chọn một thư mục (ví dụ Tài liệu hoặc Download) để mỗi file mới lưu cũng được chép ra đó.") {
+        Column(Modifier.padding(top = 8.dp)) {
+          MenuRow(I.folderOutline, "Chọn thư mục…", ExportDir.name?.let { "Đang dùng: $it" }) { exportMenu = false; scope.launch { ExportDir.choose() } }
+          if (ExportDir.uri != null) MenuRow(I.close, "Tắt sao chép") { ExportDir.clear(); exportMenu = false }
+        }
+      }
     }
 
     GroupLabel("Quét")
