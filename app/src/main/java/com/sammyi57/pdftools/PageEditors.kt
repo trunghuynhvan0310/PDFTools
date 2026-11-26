@@ -483,12 +483,15 @@ fun FillSignEditor(p: EditorProps) {
   if (selected != null) {
     val shape = RoundedCornerShape(Radius.group)
     Column(Modifier.padding(top = 8.dp).fillMaxWidth().background(c.surface, shape).border(0.6.dp, c.lineStrong, shape).padding(horizontal = 12.dp, vertical = 4.dp)) {
-      if (selected.kind == "text") PanelRow("Màu") {
+      if (selected.kind == "text" || selected.sign) PanelRow("Màu") {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
           PEN.forEach { (hex, name) ->
             val on = (selected.color ?: INK) == hex
             Box(
-              Modifier.size(34.dp).tap(shape = CircleShape, scaleTo = 0.85f, label = name) { edit(sel) { it.copy(color = hex) } }
+              Modifier.size(34.dp).tap(shape = CircleShape, scaleTo = 0.85f, label = name) {
+                if (selected.sign) scope.launch { val f = withContext(Dispatchers.IO) { recolorSignature(selected.uri, hex) }; edit(sel) { it.copy(uri = f, color = hex) } }
+                else edit(sel) { it.copy(color = hex) }
+              }
                 .border(2.dp, if (on) c.accent else Color.Transparent, CircleShape),
               contentAlignment = Alignment.Center,
             ) { Box(Modifier.size(24.dp).background(hexColor(hex), CircleShape).border(0.6.dp, c.lineStrong, CircleShape)) }
@@ -512,7 +515,7 @@ fun FillSignEditor(p: EditorProps) {
 
   // A picture onto the page: copied under the app's own files (so a resumed draft still finds it after the cache is
   // cleared), its width a share of the page and its height following from its shape on screen.
-  val addPicture = { path: String ->
+  val addPicture = { path: String, sign: Boolean ->
     val png = mimeOfPicked(path) == "image/png"
     val b = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
     android.graphics.BitmapFactory.decodeFile(path, b)
@@ -520,7 +523,7 @@ fun FillSignEditor(p: EditorProps) {
     val (fw, fh) = frame ?: (1f to 1f)
     val keep = File(appContext.filesDir, "sign-images").apply { mkdirs() }.let { File(it, "${uid()}.${if (png) "png" else "jpg"}") }
     File(path).copyTo(keep, true)
-    add(SignItem(pages.index, "image", 0.1f, 0.1f, w = IMG_W, h = IMG_W * fw * aspect / fh, uri = keep.path))
+    add(SignItem(pages.index, "image", 0.1f, 0.1f, w = IMG_W, h = IMG_W * fw * aspect / fh, uri = keep.path, sign = sign))
   }
   var signing by remember { mutableStateOf(false) }
   Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -530,14 +533,14 @@ fun FillSignEditor(p: EditorProps) {
       scope.launch {
         val pic = pickImages(false).firstOrNull() ?: return@launch
         if (mimeOfPicked(pic.path) == null) return@launch p.onError("Hãy chọn ảnh JPEG hoặc PNG. HEIC, WebP và các định dạng khác không thể đưa vào PDF ở đây.")
-        addPicture(pic.path)
+        addPicture(pic.path, false)
       }
     }
   }
-  if (signing) SignaturePad({ signing = false }) { f -> signing = false; addPicture(f.path) }
+  if (signing) SignaturePad({ signing = false }) { f -> signing = false; addPicture(f.path, true) }
   PageStrip(pages) { i -> items.any { it.page == i } }
   T(
-    if (items.isNotEmpty()) "Đã thêm ${plural(items.size, "item")}. Kéo để di chuyển; chạm để đổi cỡ, đổi màu, làm mờ hoặc xoay."
+    if (items.isNotEmpty()) "Đã thêm ${plural(items.size, "item")}. Kéo để di chuyển; chạm vào để đổi cỡ, đổi màu (chữ và chữ ký), làm mờ hoặc xoay."
     else "Thêm một dòng chữ hoặc ảnh chữ ký, rồi kéo đến đúng chỗ.",
     Type.small, c.sub, Modifier.padding(top = 10.dp),
   )
@@ -640,6 +643,22 @@ private fun saveSignature(strokes: List<List<Offset>>, pen: Float): File {
   bmp.recycle()
   old.forEach { it.delete() } // pages already signed keep their own copy (under sign-images)
   return out
+}
+
+/** The signature in another ink: every pixel takes the new colour and keeps its own transparency. A new file each time. */
+private fun recolorSignature(path: String, hex: String): String {
+  val src = android.graphics.BitmapFactory.decodeFile(path) ?: return path
+  val bmp = src.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+  src.recycle()
+  val rgb = android.graphics.Color.parseColor(hex) and 0xFFFFFF
+  val px = IntArray(bmp.width * bmp.height)
+  bmp.getPixels(px, 0, bmp.width, 0, 0, bmp.width, bmp.height)
+  for (i in px.indices) px[i] = (px[i] ushr 24 shl 24) or rgb
+  bmp.setPixels(px, 0, bmp.width, 0, 0, bmp.width, bmp.height)
+  val out = File(File(appContext.filesDir, "sign-images").apply { mkdirs() }, "${uid()}.png")
+  out.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+  bmp.recycle()
+  return out.path
 }
 
 @Composable

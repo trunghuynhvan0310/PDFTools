@@ -578,6 +578,7 @@ data class SignItem(
   val uri: String = "",
   val angle: Float = 0f,
   val opacity: Float = 1f,
+  val sign: Boolean = false, // a drawn signature: its ink colour can be changed
 )
 
 const val INK = "#0F172A" // text's default colour: a dark blue-black, like a pen

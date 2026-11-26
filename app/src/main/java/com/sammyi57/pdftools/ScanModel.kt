@@ -107,7 +107,7 @@ fun isPaperKind(kind: String) = kind == "doc" || kind == "gov"
 suspend fun renderShot(docId: String, shot: Shot, kind: String = "doc"): Shot = withContext(Dispatchers.Default) {
   val r = DocVision.process(
     appContext, shot.src,
-    ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, shot.strokes, 2400, isPaperKind(kind), File(dirOf(docId), "out-${uid()}.jpg").path),
+    ProcessOptions(shot.corners, shot.rotation, shot.filter, shot.brightness, shot.contrast, shot.strokes, if (isPaperKind(kind)) 4800 else 3600, isPaperKind(kind), File(dirOf(docId), "out-${uid()}.jpg").path),
   )
   shot.copy(out = r.path, outW = r.width, outH = r.height, bg = r.bg, outRev = shot.rev)
 }

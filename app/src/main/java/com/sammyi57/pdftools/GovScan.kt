@@ -17,7 +17,8 @@ data class GovDoc(val first: Int, val count: Int, val fields: Extracted)
 
 /** Reads scanned administrative documents with ML Kit and hands the lines to [DocFields]. */
 object GovScan {
-  private const val MAX_SIDE = 2000
+  private const val MAX_SIDE = 3600
+  private const val MIN_SIDE = 2800 // smaller pages are enlarged: ML Kit reads small print better at this size
 
   private fun load(path: String): Bitmap? {
     val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -43,7 +44,10 @@ object GovScan {
 
   private fun lines(path: String): List<OcrLine> {
     val src = load(path) ?: return emptyList()
-    val red = redChannel(src)
+    val red = redChannel(src).let { r ->
+      val long = maxOf(r.width, r.height)
+      if (long >= MIN_SIDE) r else Bitmap.createScaledBitmap(r, r.width * MIN_SIDE / long, r.height * MIN_SIDE / long, true).also { r.recycle() }
+    }
     val w = red.width.toFloat()
     val h = red.height.toFloat()
     val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -90,6 +94,6 @@ object GovScan {
 
 /** Reads the scanned pages of a Công văn scan from the originals (no filter), so a filter can't cost a letter. Paths stay for cropping. */
 suspend fun govAnalyze(shots: List<Shot>): Pair<List<GovDoc>, List<String>> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-  val paths = shots.map { s -> DocVision.process(appContext, s.src, ProcessOptions(s.corners, s.rotation, "original", 0f, 0f, emptyList(), 2000, true)).path }
+  val paths = shots.map { s -> DocVision.process(appContext, s.src, ProcessOptions(s.corners, s.rotation, "original", 0f, 0f, emptyList(), 4800, true)).path }
   GovScan.analyze(paths) to paths
 }

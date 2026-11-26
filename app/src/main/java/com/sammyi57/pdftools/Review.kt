@@ -248,20 +248,26 @@ fun Review(
       Triple(I.deleteOutline, "Xóa", false) to { modal = "delete" },
     )
     Box(Modifier.fillMaxWidth().height(0.6.dp).background(ScanUi.line))
-    Row(Modifier.fillMaxWidth().background(ScanUi.panel).horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp, vertical = 8.dp)) {
-      tools.forEach { (spec, press) ->
+    // Every tool on screen at once, in rows of six: a row that scrolls sideways hides the later tools from anyone who
+    // doesn't think to swipe it.
+    Column(Modifier.fillMaxWidth().background(ScanUi.panel).padding(horizontal = 4.dp, vertical = 6.dp)) {
+     tools.chunked(6).forEach { rowTools ->
+      Row(Modifier.fillMaxWidth()) {
+      rowTools.forEach { (spec, press) ->
         val (glyph, label, disabled) = spec
         val active = label.lowercase() == sheet
         val tint by animateColorAsState(if (active) ScanUi.accent else ScanUi.text, label = "tool")
         Column(
-          Modifier.width(70.dp).graphicsLayer { alpha = if (disabled) 0.3f else 1f }.tap(enabled = !disabled, scaleTo = 0.88f, onClick = press).padding(vertical = 4.dp),
+          Modifier.weight(1f).graphicsLayer { alpha = if (disabled) 0.3f else 1f }.tap(enabled = !disabled, scaleTo = 0.88f, onClick = press).padding(vertical = 4.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
         ) {
           val pill by animateColorAsState(if (active) ScanUi.accentSoft else Color.Transparent, label = "toolPill")
           Box(Modifier.size(48.dp, 30.dp).background(pill, CircleShape), contentAlignment = Alignment.Center) { Icon(glyph, 24.dp, tint) }
-          T(label, Type.med.copy(fontSize = 11.5.sp), tint, Modifier.padding(top = 3.dp))
+          T(label, Type.med.copy(fontSize = 11.5.sp), tint, Modifier.padding(top = 3.dp), maxLines = 1)
         }
       }
+      }
+     }
     }
   }
 

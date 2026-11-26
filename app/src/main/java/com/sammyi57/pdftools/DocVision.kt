@@ -144,10 +144,10 @@ object DocVision {
 
   fun newFile(dir: File): File = File(dir.apply { mkdirs() }, "${UUID.randomUUID()}.jpg")
 
-  private fun save(rgb: Mat, file: File) {
+  private fun save(rgb: Mat, file: File, quality: Int = 94) {
     val bgr = Mat()
     Imgproc.cvtColor(rgb, bgr, Imgproc.COLOR_RGB2BGR)
-    Imgcodecs.imwrite(file.absolutePath, bgr, MatOfInt(Imgcodecs.IMWRITE_JPEG_QUALITY, 90))
+    Imgcodecs.imwrite(file.absolutePath, bgr, MatOfInt(Imgcodecs.IMWRITE_JPEG_QUALITY, quality))
     bgr.release()
   }
 
@@ -163,11 +163,18 @@ object DocVision {
     rgba.release()
 
     o.corners?.takeIf { it.size == 8 }?.let { c -> img = warp(img, DoubleArray(8) { c[it].toDouble() }, o.paper) }
+    // 300 dpi on an A4 sheet is 3508 px; more only makes the file bigger. Shrunk with area averaging, which keeps thin strokes.
+    val cap = if (o.paper) 3508 else 3000
+    if (max(img.cols(), img.rows()) > cap) {
+      val k = cap.toDouble() / max(img.cols(), img.rows())
+      Imgproc.resize(img, img, Size(), k, k, Imgproc.INTER_AREA)
+    }
     when (((o.rotation % 360) + 360) % 360) {
       90 -> Core.rotate(img, img, Core.ROTATE_90_CLOCKWISE)
       180 -> Core.rotate(img, img, Core.ROTATE_180)
       270 -> Core.rotate(img, img, Core.ROTATE_90_COUNTERCLOCKWISE)
     }
+    if (o.paper) sharpen(img) // soft focus costs the small marks (Vietnamese tone marks) first
     filter(img, o.filter)
     if (o.brightness != 0f || o.contrast != 0f) {
       val alpha = 1 + o.contrast * 0.8 // contrast -1..1 -> 0.2x..1.8x around mid-gray
@@ -205,10 +212,18 @@ object DocVision {
       MatOfPoint2f(Point(0.0, 0.0), Point(outW, 0.0), Point(outW, outH), Point(0.0, outH)),
     )
     val out = Mat()
-    Imgproc.warpPerspective(src, out, m, Size(outW, outH), Imgproc.INTER_LINEAR, Core.BORDER_REPLICATE)
+    Imgproc.warpPerspective(src, out, m, Size(outW, outH), Imgproc.INTER_CUBIC, Core.BORDER_REPLICATE)
     src.release()
     m.release()
     return out
+  }
+
+  // A mild unsharp mask: the picture plus half of what a small blur takes away.
+  private fun sharpen(img: Mat) {
+    val blur = Mat()
+    Imgproc.GaussianBlur(img, blur, Size(0.0, 0.0), 1.3)
+    Core.addWeighted(img, 1.5, blur, -0.5, 0.0, img)
+    blur.release()
   }
 
   // Divides each channel by a blurred estimate of the paper, so shadows and uneven light go flat white.

@@ -410,7 +410,9 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
           if (chars >= (if (hasScanImage(doc.getPage(i).resources)) 300 else 50)) { searchable++; continue }
           // Boxes come back as fractions of the page, so the render resolution never reaches the text layer.
           val lines = r.openPage(i).use { p ->
-            val bw = minOf(p.width * 3, 3000) // ~216 dpi: enough for ML Kit to read small print
+            // 300 dpi (capped at 3600 px on the long side): tone marks and the hooks on ư, ơ are a few pixels at 216 dpi.
+            val scale = minOf(300f / 72f, 3600f / maxOf(p.width, p.height))
+            val bw = (p.width * scale).toInt().coerceAtLeast(1)
             val bh = (p.height * bw.toFloat() / p.width).toInt().coerceAtLeast(1)
             val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(Color.WHITE)

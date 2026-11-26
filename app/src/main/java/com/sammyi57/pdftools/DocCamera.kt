@@ -65,7 +65,13 @@ class DocCamera(context: Context) {
     val p = ProcessCameraProvider.awaitInstance(preview.context)
     val ratio = ResolutionSelector.Builder().setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY).build()
     val previewCase = Preview.Builder().setResolutionSelector(ratio).build().also { it.surfaceProvider = preview.surfaceProvider }
-    val captureCase = ImageCapture.Builder().setResolutionSelector(ratio).setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).setFlashMode(flashMode()).build()
+    // The photo is what OCR and the PDF are made from: ask for the sensor's full size (capped near 16 MP so a 50-200 MP
+    // camera doesn't run out of memory) and a high JPEG quality, whatever the preview uses.
+    val still = ResolutionSelector.Builder()
+      .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+      .setResolutionStrategy(androidx.camera.core.resolutionselector.ResolutionStrategy(android.util.Size(4608, 3456), androidx.camera.core.resolutionselector.ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+      .build()
+    val captureCase = ImageCapture.Builder().setResolutionSelector(still).setJpegQuality(97).setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).setFlashMode(flashMode()).build()
     val analysis = ImageAnalysis.Builder().setResolutionSelector(ratio).setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
       .also { it.setAnalyzer(worker, ::analyze) }
     p.unbindAll()
@@ -132,7 +138,7 @@ class DocCamera(context: Context) {
           val bmp = DocVision.rotate(image.toBitmap(), degrees)
           image.close()
           val file = DocVision.newFile(File(appContext.cacheDir, "doc-scans"))
-          FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+          FileOutputStream(file).use { bmp.compress(Bitmap.CompressFormat.JPEG, 97, it) }
           val corners = DocVision.detectBitmap(bmp)?.map { it.toFloat() }
           cont.resume(Photo(file.path, bmp.width, bmp.height, corners))
           bmp.recycle()
