@@ -418,7 +418,12 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
             bitmap.eraseColor(Color.WHITE)
             p.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             try {
-              Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 120, TimeUnit.SECONDS)
+              // Tesseract with the Vietnamese model first; ML Kit only if that can't start.
+              Ocr.lines(bitmap)?.mapNotNull { l ->
+                val text = ocrText(l.text)
+                val width = if (text.isEmpty()) 0f else PdfFonts.width(text)
+                if (text.isEmpty() || width <= 0f) null else Triple(text, RectF(l.x0, l.y0, l.x1, l.y1), width)
+              } ?: Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 120, TimeUnit.SECONDS)
                 .textBlocks.flatMap { block -> block.lines }
                 .mapNotNull { line ->
                   val box = line.boundingBox ?: return@mapNotNull null

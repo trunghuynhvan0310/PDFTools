@@ -8,3 +8,5 @@
 -keep class com.google.mlkit.vision.common.** { *; }
 -keep class com.google.android.gms.internal.mlkit_vision_text** { *; }
 -keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
+# Tesseract (Vietnamese OCR): JNI reaches back into these classes by name.
+-keep class com.googlecode.tesseract.android.** { *; }

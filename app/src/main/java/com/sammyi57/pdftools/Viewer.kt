@@ -60,6 +60,8 @@ import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -94,17 +96,22 @@ fun PdfViewerScreen(path: String, name: String) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val state = remember { PdfViewerState() }
-  val loader = remember { SandboxedPdfLoader(context) }
+  var attempt by remember { mutableIntStateOf(0) } // a fresh loader (and connection to its service) after a stall
+  val loader = remember(attempt) { SandboxedPdfLoader(context) }
   var doc by remember { mutableStateOf<PdfDocument?>(null) }
   var problem by remember { mutableStateOf("") }
   var password by remember { mutableStateOf<String?>(null) }
   var asking by remember { mutableStateOf(false) }
   var wrong by remember { mutableStateOf(false) }
 
-  LaunchedEffect(password) {
+  LaunchedEffect(password, attempt) {
     try {
-      doc = loader.openDocument(Uri.fromFile(File(path)), password)
+      // The PDF service runs in its own process; if it stalls or was killed while the app was away, opening never
+      // returns. Wait a while, try once more with a fresh connection, then say so instead of spinning forever.
+      doc = withTimeout(15_000) { loader.openDocument(Uri.fromFile(File(path)), password) }
       asking = false
+    } catch (_: TimeoutCancellationException) {
+      if (attempt < 1) attempt++ else problem = "PDF này mở quá lâu. Hãy thử lại, hoặc mở bằng ứng dụng khác."
     } catch (_: PdfPasswordException) {
       wrong = password != null
       asking = true
@@ -176,7 +183,10 @@ fun PdfViewerScreen(path: String, name: String) {
 
     Box(Modifier.weight(1f).fillMaxWidth().background(c.sunken)) {
       when {
-        problem.isNotEmpty() -> T(problem, Type.body, c.sub, Modifier.align(Alignment.Center).padding(32.dp))
+        problem.isNotEmpty() -> Column(Modifier.align(Alignment.Center).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+          T(problem, Type.body, c.sub, align = androidx.compose.ui.text.style.TextAlign.Center)
+          Btn("Mở bằng ứng dụng khác", Modifier.padding(top = 16.dp), I.openInNew, BtnKind.Secondary) { openExternally(path, name) }
+        }
         doc == null -> Spinner(c.accent, modifier = Modifier.align(Alignment.Center))
       }
       PdfViewer(

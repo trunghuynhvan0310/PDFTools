@@ -52,6 +52,7 @@ object GovScan {
     val h = red.height.toFloat()
     val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     try {
+      Ocr.wordLines(red)?.let { return it } // Tesseract, Vietnamese model; ML Kit below only if it can't start
       val text = Tasks.await(recognizer.process(InputImage.fromBitmap(red, 0)), 120, TimeUnit.SECONDS)
       return text.textBlocks.flatMap { it.lines }.flatMap { line ->
         val words = line.elements.mapNotNull { e ->

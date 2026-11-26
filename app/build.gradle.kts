@@ -106,7 +106,8 @@ dependencies {
 
   // PDF engine (Apache PDFBox ported to Android) and on-device OCR with the bundled Latin model.
   implementation("com.tom-roush:pdfbox-android:2.0.27.0")
-  implementation("com.google.mlkit:text-recognition:16.0.1")
+  implementation("com.google.mlkit:text-recognition:16.0.1") // fallback reader
+  implementation("cz.adaptech.tesseract4android:tesseract4android:4.8.0") // Vietnamese OCR (tessdata_best vie in assets)
 
   // The in-app viewer: Jetpack's PDF viewer (the Drive viewer's engine) with text selection, search, zoom and links.
   // It needs Android 12 with the PDF system update; older phones keep opening PDFs in their own viewer.
