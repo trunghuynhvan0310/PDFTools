@@ -20,8 +20,8 @@ object Ocr {
     return try {
       val dir = File(appContext.filesDir, "tessdata").apply { mkdirs() }
       val model = File(dir, "vie.traineddata")
-      val size = appContext.assets.openFd("vie.traineddata").use { it.length }
-      if (!model.exists() || model.length() != size) {
+      // (assets.openFd would throw here: the model is stored compressed, and that quietly sent every page to ML Kit.)
+      if (!model.exists() || model.length() < 1_000_000) {
         val tmp = File(dir, "vie.traineddata.tmp")
         appContext.assets.open("vie.traineddata").use { i -> tmp.outputStream().use { i.copyTo(it, 256 * 1024) } }
         if (!tmp.renameTo(model)) { tmp.copyTo(model, true); tmp.delete() }
@@ -55,7 +55,10 @@ object Ocr {
       do {
         val text = it.getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE)?.trim().orEmpty()
         val r = it.getBoundingRect(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE)
-        if (text.isNotEmpty() && r.width() > 0 && r.height() > 0) out.add(OcrLine(text, r.left / w, r.top / h, r.right / w, r.bottom / h))
+        // A dark page edge or a shadow comes back as "lines" of digits and symbols: low confidence, few real letters.
+        val real = text.count { c -> c.isLetter() }
+        val keep = real * 2 >= text.count { c -> !c.isWhitespace() } && it.confidence(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE) >= 35f
+        if (keep && text.isNotEmpty() && r.width() > 0 && r.height() > 0) out.add(OcrLine(text, r.left / w, r.top / h, r.right / w, r.bottom / h))
       } while (it.next(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE))
       it.delete()
       out
@@ -85,7 +88,7 @@ object Ocr {
         if (it.isAtBeginningOf(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE)) flush()
         val text = it.getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD)?.trim().orEmpty()
         val r = it.getBoundingRect(TessBaseAPI.PageIteratorLevel.RIL_WORD)
-        if (text.isNotEmpty() && r.width() > 0 && r.height() > 0) cur.add(OcrWord(text, r.left / w, r.top / h, r.right / w, r.bottom / h))
+        if (it.confidence(TessBaseAPI.PageIteratorLevel.RIL_WORD) >= 30f && text.isNotEmpty() && r.width() > 0 && r.height() > 0) cur.add(OcrWord(text, r.left / w, r.top / h, r.right / w, r.bottom / h))
       } while (it.next(TessBaseAPI.PageIteratorLevel.RIL_WORD))
       flush()
       it.delete()
