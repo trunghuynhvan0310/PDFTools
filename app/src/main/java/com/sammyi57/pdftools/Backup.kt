@@ -36,6 +36,7 @@ import java.security.MessageDigest
 private const val API = "https://www.googleapis.com/drive/v3"
 private const val UPLOAD = "https://www.googleapis.com/upload/drive/v3"
 private const val ROOT = "PDF Tools"
+private const val LEDGER_FILE = "So-cong-van.json" // the sổ công văn, next to the PDFs (which are all the sync looks at)
 private const val FOLDER_MIME = "application/vnd.google-apps.folder"
 
 @Serializable
@@ -306,13 +307,34 @@ object Backup {
     // Every write is dropped if the account changed while this run was working.
     fun mine(fn: (BackupState) -> BackupState) = update { x -> if (x.email == email) fn(x) else x }
     try {
-      withToken(email) { token -> reconcile(token, email, ::mine) }
+      withToken(email) { token ->
+        reconcile(token, email, ::mine)
+        // The ledger is small and separate: a failure here must not fail the PDFs, except an expired token, which retries.
+        try { syncLedger(token) } catch (e: DriveError) { if (e.status == 401) throw e; android.util.Log.w("PdfTools", "Ledger sync failed", e) } catch (e: Exception) { android.util.Log.w("PdfTools", "Ledger sync failed", e) }
+      }
       mine { it.copy(lastSync = System.currentTimeMillis(), error = null) }
     } catch (e: Exception) {
       android.util.Log.w("PdfTools", "Drive sync failed", e) // the words shown are simplified; logcat keeps the cause
       mine { it.copy(error = describe(e)) }
     }
     withContext(Dispatchers.Main) { Store.refreshOnly() }
+  }
+
+  /** Two-way sync of the sổ công văn: one JSON file in the Drive folder, merged entry by entry (newest change wins). */
+  private suspend fun syncLedger(token: String) {
+    val rootId = ensureRoot(token, state.folderId)
+    val q = URLEncoder.encode("name='$LEDGER_FILE' and '$rootId' in parents and trashed=false", "UTF-8")
+    val found = call(token, "$API/files?q=$q&fields=files(id)").optJSONArray("files")
+    val id = if (found != null && found.length() > 0) found.getJSONObject(0).getString("id") else null
+    var text: String? = null
+    if (id != null) {
+      val tmp = File(appContext.cacheDir, "ledger-down.json")
+      try { downloadFromDrive(token, id, tmp); text = tmp.readText() } finally { tmp.delete() }
+    }
+    if (Ledger.mergeRemote(text)) {
+      val tmp = File(appContext.cacheDir, "ledger-up.json").apply { writeText(Ledger.exportJson()) }
+      try { uploadToDrive(token, tmp, LEDGER_FILE, rootId, id, "application/json") } finally { tmp.delete() }
+    }
   }
 
   private class Remote(val id: String, val size: Long, val md5: String?, val modified: String, val parent: String)

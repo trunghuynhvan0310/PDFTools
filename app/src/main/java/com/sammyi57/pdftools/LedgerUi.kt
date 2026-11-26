@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -64,6 +65,7 @@ fun VanBanEditor(
   onSave: (VanBan) -> Unit,
   onSkip: (() -> Unit)?,
   onDismiss: () -> Unit,
+  top: @Composable (VanBan) -> Unit = {},
 ) {
   var v by remember(start.id) { mutableStateOf(start) }
   FullSheet(onDismiss) {
@@ -71,6 +73,7 @@ fun VanBanEditor(
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
         T(title, Type.title)
         T("Số, ngày và người ký thường viết tay nên máy dễ đọc nhầm. Hãy đối chiếu với ảnh trang giấy.", Type.body, c.sub, Modifier.padding(top = 4.dp))
+        top(v)
         Crop(pagePath, soBox, "Chỗ in số và ký hiệu")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
           Labeled("Số", v.so, { v = v.copy(so = it.trim()) }, modifier = Modifier.weight(1f))
@@ -106,6 +109,9 @@ fun VanBanEditor(
 fun GovConfirm(docs: List<GovDoc>, pagePaths: List<String>, pdfPath: String, onDone: (saved: Int) -> Unit) {
   var at by remember { mutableStateOf(0) }
   var saved by remember { mutableStateOf(0) }
+  var bookId by remember { mutableStateOf(Ledger.current) } // stays for the next document of the same scan
+  var picking by remember { mutableStateOf(false) }
+  var naming by remember { mutableStateOf(false) }
   val doc = docs.getOrNull(at)
   if (doc == null) { LaunchedEffect(Unit) { onDone(saved) }; return }
   val f = doc.fields
@@ -122,13 +128,29 @@ fun GovConfirm(docs: List<GovDoc>, pagePaths: List<String>, pdfPath: String, onD
     start, pagePaths.getOrNull(doc.first), f.soBox, f.ngayBox,
     title = if (docs.size > 1) "Xác nhận · văn bản ${at + 1}/${docs.size}" else "Xác nhận văn bản",
     saveLabel = if (last) "Lưu vào sổ" else "Lưu và xem văn bản tiếp",
-    onSave = { Ledger.upsert(it); saved++; next() },
+    onSave = { Ledger.upsert(it.copy(book = bookId)); Ledger.current = bookId; saved++; next() },
     onSkip = next,
     onDismiss = { onDone(saved) },
+    top = {
+      Btn("Lưu vào: ${Ledger.books.firstOrNull { it.id == bookId }?.name ?: "Sổ công văn"}", Modifier.fillMaxWidth().padding(top = 12.dp), I.fileDocumentOutline, BtnKind.Secondary) { picking = true }
+    },
   )
+  if (picking) {
+    AppDialog({ picking = false }, "Chọn sổ", "Thêm vào sổ đã có hoặc tạo sổ mới.") {
+      Column(Modifier.padding(top = 8.dp)) {
+        Ledger.books.forEach { b ->
+          MenuRow(if (b.id == bookId) I.check else I.fileDocumentOutline, b.name, "${Ledger.count(b.id)} văn bản") { bookId = b.id; picking = false }
+        }
+        MenuRow(I.fileDocumentEditOutline, "Sổ mới…") { picking = false; naming = true }
+      }
+    }
+  }
+  if (naming) {
+    PromptDialog("Tên sổ mới", placeholder = "Ví dụ: Công văn đến 2026", submitLabel = "Tạo", onClose = { naming = false }) { bookId = Ledger.addBook(it).id }
+  }
 }
 
-/** The Sổ công văn: every document put in the ledger, with search, editing and an Excel export. */
+/** The Sổ công văn: pick or make a sổ, then its documents with search, editing and an Excel export. */
 @Composable
 fun LedgerScreen() {
   val nav = LocalNav.current
@@ -136,8 +158,13 @@ fun LedgerScreen() {
   var editing by remember { mutableStateOf<VanBan?>(null) }
   var removing by remember { mutableStateOf<VanBan?>(null) }
   var failure by remember { mutableStateOf<String?>(null) }
+  var naming by remember { mutableStateOf(false) }
+  var renaming by remember { mutableStateOf(false) }
+  var deleting by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
-  val all = Ledger.items
+  val books = Ledger.books
+  val book = books.first { it.id == Ledger.current }
+  val all = Ledger.items(book.id)
   val tokens = fold(q.trim()).split(Regex("\\s+")).filter { it.isNotEmpty() }
   val shown = if (tokens.isEmpty()) all else all.filter { v ->
     val hay = fold(listOf(v.soKyHieu, v.ngayHienThi, v.coQuan, v.loai, v.trichYeu, v.kinhGui, v.noiNhan, v.nguoiKy, v.chucVu).joinToString(" "))
@@ -146,7 +173,15 @@ fun LedgerScreen() {
 
   Screen(bottom = 40.dp) {
     BackBar("Công cụ") { nav.back() }
-    LargeTitle("Sổ công văn", if (all.isEmpty()) "Chưa có văn bản nào" else "${all.size} văn bản, mới nhất ở trên")
+    LargeTitle("Sổ công văn", if (all.isEmpty()) "${book.name} · chưa có văn bản" else "${book.name} · ${all.size} văn bản")
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      books.forEach { b -> Chip(b.name, b.id == book.id) { Ledger.current = b.id; q = "" } }
+      Chip("+ Sổ mới", false) { naming = true }
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      T("Đổi tên sổ", Type.bold, c.accent, Modifier.tap { renaming = true }.padding(vertical = 8.dp, horizontal = 4.dp))
+      T("Xóa sổ", Type.bold, c.sub, Modifier.tap { deleting = true }.padding(vertical = 8.dp, horizontal = 12.dp))
+    }
     if (all.isEmpty()) {
       Empty({ Icon(I.fileDocumentOutline, 56.dp, c.sub) }, "Sổ còn trống", "Quét bằng chế độ Công văn, kiểm tra các trường máy đọc được rồi bấm Lưu vào sổ.") {
         Btn("Quét công văn", Modifier.fillMaxWidth(), I.fileDocumentEditOutline) { nav.scan() }
@@ -158,8 +193,9 @@ fun LedgerScreen() {
       scope.launch {
         try {
           val bytes = withContext(Dispatchers.Default) { ledgerXlsx(all) }
-          val f = saveTemp("So-cong-van.xlsx", bytes)
-          share(f.path, "So-cong-van.xlsx")
+          val name = "${cleanName(book.name).ifEmpty { "So-cong-van" }}.xlsx"
+          val f = saveTemp(name, bytes)
+          share(f.path, name)
         } catch (e: Exception) {
           failure = e.message ?: "Không xuất được tệp."
         }
@@ -194,6 +230,16 @@ fun LedgerScreen() {
       confirmLabel = "Xóa", danger = true,
       onDismiss = { removing = null },
     ) { Ledger.remove(v.id) }
+  }
+  if (naming) PromptDialog("Tên sổ mới", placeholder = "Ví dụ: Công văn đến 2026", submitLabel = "Tạo", onClose = { naming = false }) { Ledger.current = Ledger.addBook(it).id }
+  if (renaming) PromptDialog("Đổi tên sổ", initial = book.name, onClose = { renaming = false }) { Ledger.renameBook(book.id, it) }
+  if (deleting) {
+    ConfirmDialog(
+      title = "Xóa sổ \"${book.name}\"?",
+      message = "Sổ và ${all.size} văn bản trong đó sẽ bị xóa, kể cả trên Drive nếu đã bật sao lưu. Tệp PDF đã quét vẫn còn trong Tệp.",
+      confirmLabel = "Xóa sổ", danger = true,
+      onDismiss = { deleting = false },
+    ) { Ledger.removeBook(book.id); Ledger.current = Ledger.books.first().id }
   }
   failure?.let { m -> AppDialog({ failure = null }, "Không xuất được") { T(m, Type.body, c.sub) } }
 }

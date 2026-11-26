@@ -44,7 +44,7 @@ class Named(val name: String, val bytes: ByteArray)
 
 /** Page sizes in points, portrait. */
 val SIZES: Map<String, Pair<Float, Float>> = linkedMapOf(
-  "A4" to (595.28f to 841.89f), "A5" to (419.53f to 595.28f), "Letter" to (612f to 792f), "Legal" to (612f to 1008f),
+  "A3" to (841.89f to 1190.55f), "A4" to (595.28f to 841.89f), "A5" to (419.53f to 595.28f), "Letter" to (612f to 792f), "Legal" to (612f to 1008f),
 )
 private val A4 = SIZES.getValue("A4")
 

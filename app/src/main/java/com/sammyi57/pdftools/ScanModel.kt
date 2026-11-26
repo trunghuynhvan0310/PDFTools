@@ -63,7 +63,7 @@ data class ScanDoc(
 val KIND_LABEL = linkedMapOf("whiteboard" to "Bảng trắng", "book" to "Sách", "doc" to "Tài liệu", "gov" to "Công văn", "id" to "Thẻ ID", "card" to "Danh thiếp")
 val FILTERS = listOf("original" to "Màu gốc", "auto" to "Màu tự động", "light" to "Chữ sáng", "gray" to "Thang xám", "whiteboard" to "Bảng trắng")
 val PAGE_SIZES = listOf(
-  "auto" to "Tự động (khớp khổ giấy)", "fit" to "Kích thước gốc", "A4-portrait" to "A4 dọc", "A4-landscape" to "A4 ngang", "A5-portrait" to "A5 dọc",
+  "auto" to "Tự động (khớp khổ giấy)", "fit" to "Kích thước gốc", "A3-portrait" to "A3 dọc", "A3-landscape" to "A3 ngang", "A4-portrait" to "A4 dọc", "A4-landscape" to "A4 ngang", "A5-portrait" to "A5 dọc",
   "A5-landscape" to "A5 ngang", "Letter-portrait" to "Letter dọc", "Letter-landscape" to "Letter ngang",
   "Legal-portrait" to "Legal dọc", "Legal-landscape" to "Legal ngang",
 )

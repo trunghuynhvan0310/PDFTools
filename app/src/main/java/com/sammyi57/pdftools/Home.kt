@@ -74,7 +74,7 @@ fun Home() {
         Group(Modifier.padding(top = 14.dp)) {
           ListRow(
             "Sổ công văn", first = true, chevron = true, lead = { Icon(I.fileDocumentEditOutline, 24.dp, c.accent) },
-            subtitle = if (Ledger.items.isEmpty()) "Quét công văn, xuất bảng thống kê Excel" else "${Ledger.items.size} văn bản · xuất Excel",
+            subtitle = Ledger.books.sumOf { Ledger.count(it.id) }.let { n -> if (n == 0) "Quét công văn, xuất bảng thống kê Excel" else "$n văn bản · ${Ledger.books.size} sổ · xuất Excel" },
             onClick = { nav.ledger() },
           )
         }
