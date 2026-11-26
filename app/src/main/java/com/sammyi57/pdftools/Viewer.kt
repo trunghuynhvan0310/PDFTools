@@ -10,6 +10,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -60,7 +67,6 @@ import androidx.pdf.SandboxedPdfLoader
 import androidx.pdf.compose.PdfViewer
 import androidx.pdf.compose.PdfViewerState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -96,27 +102,25 @@ fun PdfViewerScreen(path: String, name: String) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val state = remember { PdfViewerState() }
-  var attempt by remember { mutableIntStateOf(0) } // a fresh loader (and connection to its service) after a stall
-  val loader = remember(attempt) { SandboxedPdfLoader(context) }
+  val loader = remember { SandboxedPdfLoader(context) }
+  var fallback by remember { mutableStateOf(false) } // the system's plain page renderer, when the PDF service won't answer
   var doc by remember { mutableStateOf<PdfDocument?>(null) }
   var problem by remember { mutableStateOf("") }
   var password by remember { mutableStateOf<String?>(null) }
   var asking by remember { mutableStateOf(false) }
   var wrong by remember { mutableStateOf(false) }
 
-  LaunchedEffect(password, attempt) {
+  LaunchedEffect(password) {
     try {
-      // The PDF service runs in its own process; if it stalls or was killed while the app was away, opening never
-      // returns. Wait a while, try once more with a fresh connection, then say so instead of spinning forever.
-      doc = withTimeout(15_000) { loader.openDocument(Uri.fromFile(File(path)), password) }
+      // The PDF service runs in its own process; on some phones it stalls or gets killed while the app is away and
+      // opening never returns. After ten seconds the pages are shown with the system renderer instead.
+      doc = withTimeout(10_000) { loader.openDocument(Uri.fromFile(File(path)), password) }
       asking = false
-    } catch (_: TimeoutCancellationException) {
-      if (attempt < 1) attempt++ else problem = "PDF này mở quá lâu. Hãy thử lại, hoặc mở bằng ứng dụng khác."
     } catch (_: PdfPasswordException) {
       wrong = password != null
       asking = true
-    } catch (_: Exception) {
-      problem = "Không mở được PDF này. Tệp có thể bị hỏng."
+    } catch (_: Exception) { // a timeout, or a file the service can't read
+      fallback = true
     }
   }
   val latest by rememberUpdatedState(doc)
@@ -176,18 +180,15 @@ fun PdfViewerScreen(path: String, name: String) {
           Marquee(stem(name), Type.bold.copy(fontSize = Type.bold.fontSize * 1.1f), c.ink, Modifier.weight(1f).padding(horizontal = 4.dp))
           IconBtn(I.magnify, label = "Tìm kiếm", enabled = doc != null) { searching = true }
           IconBtn(I.shareVariantOutline, label = "Chia sẻ") { share(path, name) }
-          IconBtn(I.openInNew, label = "Mở bằng ứng dụng khác") { openExternally(path, name) }
         }
       }
     }
 
     Box(Modifier.weight(1f).fillMaxWidth().background(c.sunken)) {
       when {
-        problem.isNotEmpty() -> Column(Modifier.align(Alignment.Center).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-          T(problem, Type.body, c.sub, align = androidx.compose.ui.text.style.TextAlign.Center)
-          Btn("Mở bằng ứng dụng khác", Modifier.padding(top = 16.dp), I.openInNew, BtnKind.Secondary) { openExternally(path, name) }
-        }
-        doc == null -> Spinner(c.accent, modifier = Modifier.align(Alignment.Center))
+        fallback -> SimplePdfPages(path)
+        problem.isNotEmpty() -> T(problem, Type.body, c.sub, Modifier.align(Alignment.Center).padding(32.dp))
+        doc == null && !asking -> Spinner(c.accent, modifier = Modifier.align(Alignment.Center))
       }
       PdfViewer(
         doc, state, Modifier.fillMaxSize(),
@@ -290,6 +291,40 @@ private fun PasswordPrompt(name: String, wrong: Boolean, onCancel: () -> Unit, o
     Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
       Btn("Hủy", Modifier.weight(1f), kind = BtnKind.Secondary, onClick = onCancel)
       Btn("Mở", Modifier.weight(1f), kind = BtnKind.Accent, enabled = typed.isNotEmpty()) { onSubmit(typed) }
+    }
+  }
+}
+
+/** Plain page-by-page view with the system's PdfRenderer: no search or text selection, but it opens whatever the PDF service can't. */
+@Composable
+private fun SimplePdfPages(path: String) {
+  val handle = remember(path) { runCatching { PdfRenderer(ParcelFileDescriptor.open(File(pathOf(path)), ParcelFileDescriptor.MODE_READ_ONLY)) }.getOrNull() }
+  DisposableEffect(handle) { onDispose { runCatching { handle?.close() } } }
+  if (handle == null) {
+    Box(Modifier.fillMaxSize()) { T("Không mở được PDF này. Tệp có thể bị hỏng.", Type.body, c.sub, Modifier.align(Alignment.Center).padding(32.dp)) }
+    return
+  }
+  val lock = remember(handle) { Any() } // PdfRenderer allows one open page at a time
+  LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    items(handle.pageCount) { i ->
+      val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, i) {
+        value = withContext(Dispatchers.IO) {
+          runCatching {
+            synchronized(lock) {
+              handle.openPage(i).use { p ->
+                val w = 1400
+                val b = Bitmap.createBitmap(w, (p.height * w.toFloat() / p.width).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+                b.eraseColor(android.graphics.Color.WHITE)
+                p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                b.asImageBitmap()
+              }
+            }
+          }.getOrNull()
+        }
+      }
+      val b = bmp
+      if (b == null) Box(Modifier.fillMaxWidth().height(420.dp).background(c.surface))
+      else Image(b, "Trang ${i + 1}", Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth)
     }
   }
 }
