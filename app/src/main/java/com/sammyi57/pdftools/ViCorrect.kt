@@ -52,7 +52,7 @@ object ViCorrect {
         }
       }
       val o2n = HashMap<String, String>()
-      j.getJSONObject("old2new").let { o -> o.keys().forEach { o2n[it] = o.getString(it) } }
+      j.getJSONObject("o2n").let { o -> o.keys().forEach { o2n[it] = o.getString(it) } }
       Kho(uni, sidx, big, o2n).also { kho = it }
     } catch (e: Throwable) {
       android.util.Log.w("PdfTools", "Vietnamese word list unavailable", e)
@@ -111,6 +111,7 @@ object ViCorrect {
       val o = pick[i]!!
       val t = toks[i]
       when {
+        o == low[i] -> t // left as read: keep its capitals ("TTr" must not become "Ttr")
         t.length > 1 && t.all { it.isUpperCase() } -> o.uppercase()
         t[0].isUpperCase() -> o.substring(0, 1).uppercase() + o.substring(1)
         else -> o
