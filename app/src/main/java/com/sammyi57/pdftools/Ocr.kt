@@ -61,14 +61,19 @@ object Ocr {
       if (page == null) {
         t.setImage(bmp)
         t.utF8Text // runs the recognition
-        collect(t, words, 0.0, bmp.width, bmp.height, out)
+        collect(t, words, 0.0, bmp.width, bmp.height, 0, 0, out)
       } else {
-        t.setImage(page.gray, page.w, page.h, 1, page.w)
         t.pageSegMode = if (page.regions.size > 1) TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN else TessBaseAPI.PageSegMode.PSM_AUTO
         for (r in page.regions) {
-          t.setRectangle(r[0], r[1], r[2] - r[0], r[3] - r[1])
+          // Each block is cut out and read as a picture of its own: pointing the engine at a rectangle of the whole page
+          // (setRectangle) made it analyse the page around it and turn a clean body of text into rubbish.
+          val rw = r[2] - r[0]
+          val rh = r[3] - r[1]
+          val crop = ByteArray(rw * rh)
+          for (y in 0 until rh) System.arraycopy(page.gray, (r[1] + y) * page.w + r[0], crop, y * rw, rw)
+          t.setImage(crop, rw, rh, 1, rw)
           t.utF8Text
-          collect(t, words, page.angle, page.w, page.h, out)
+          collect(t, words, page.angle, page.w, page.h, r[0], r[1], out)
         }
       }
       out.map { it.copy(text = ViCorrect.fix(it.text)) }.filter { it.text.isNotBlank() }
@@ -82,12 +87,12 @@ object Ocr {
   }
 
   /** A box found on the straightened page, as fractions of the original picture (turned back by `angle` degrees). */
-  private fun frac(r: android.graphics.Rect, angle: Double, w: Int, h: Int): FloatArray {
+  private fun frac(r: android.graphics.Rect, angle: Double, w: Int, h: Int, ox: Int, oy: Int): FloatArray {
     val a = Math.toRadians(angle)
     val c = Math.cos(a)
     val s = Math.sin(a)
-    val dx = (r.left + r.right) / 2.0 - w / 2.0
-    val dy = (r.top + r.bottom) / 2.0 - h / 2.0
+    val dx = (r.left + r.right) / 2.0 + ox - w / 2.0
+    val dy = (r.top + r.bottom) / 2.0 + oy - h / 2.0
     val cx = c * dx - s * dy + w / 2.0
     val cy = s * dx + c * dy + h / 2.0
     val hw = r.width() / 2.0
@@ -95,7 +100,7 @@ object Ocr {
     return floatArrayOf(((cx - hw) / w).toFloat(), ((cy - hh) / h).toFloat(), ((cx + hw) / w).toFloat(), ((cy + hh) / h).toFloat())
   }
 
-  private fun collect(t: TessBaseAPI, words: Boolean, angle: Double, w: Int, h: Int, out: MutableList<OcrLine>) {
+  private fun collect(t: TessBaseAPI, words: Boolean, angle: Double, w: Int, h: Int, ox: Int, oy: Int, out: MutableList<OcrLine>) {
     val level = if (words) TessBaseAPI.PageIteratorLevel.RIL_WORD else TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE
     var cur = ArrayList<OcrWord>()
     val flush = { if (cur.isNotEmpty()) { out.addAll(splitColumns(cur)); cur = ArrayList() } }
@@ -107,7 +112,7 @@ object Ocr {
       val r = it.getBoundingRect(level)
       val conf = it.confidence(level)
       if (text.isNotEmpty() && r.width() > 0 && r.height() > 0) {
-        val b = frac(r, angle, w, h)
+        val b = frac(r, angle, w, h, ox, oy)
         if (words) {
           if (conf >= 30f) cur.add(OcrWord(text, b[0], b[1], b[2], b[3]))
         } else {
