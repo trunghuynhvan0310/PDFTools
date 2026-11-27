@@ -63,17 +63,20 @@ object Ocr {
         t.utF8Text // runs the recognition
         collect(t, words, 0.0, bmp.width, bmp.height, 0, 0, out)
       } else {
-        t.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN
         for (r in page.regions) {
-          // Each block is cut out and read as a picture of its own: pointing the engine at a rectangle of the whole page
-          // (setRectangle) made it analyse the page around it and turn a clean body of text into rubbish.
+          // Each block is cut out and read as a picture of its own (the same way a whole page was read before).
           val rw = r[2] - r[0]
           val rh = r[3] - r[1]
-          val crop = ByteArray(rw * rh)
-          for (y in 0 until rh) System.arraycopy(page.gray, (r[1] + y) * page.w + r[0], crop, y * rw, rw)
-          t.setImage(crop, rw, rh, 1, rw)
+          val px = IntArray(rw * rh)
+          for (y in 0 until rh) {
+            val row = (r[1] + y) * page.w + r[0]
+            for (x in 0 until rw) { val v = page.gray[row + x].toInt() and 0xFF; px[y * rw + x] = (0xFF shl 24) or (v shl 16) or (v shl 8) or v }
+          }
+          val crop = Bitmap.createBitmap(px, rw, rh, Bitmap.Config.ARGB_8888)
+          t.setImage(crop)
           t.utF8Text
           collect(t, words, page.angle, page.w, page.h, r[0], r[1], out)
+          crop.recycle()
         }
       }
       out.map { it.copy(text = ViCorrect.fix(it.text)) }.filter { it.text.isNotBlank() }
@@ -81,7 +84,6 @@ object Ocr {
       android.util.Log.w("PdfTools", "Tesseract failed on a page", e)
       null
     } finally {
-      runCatching { t.pageSegMode = TessBaseAPI.PageSegMode.PSM_AUTO }
       runCatching { t.clear() }
     }
   }
