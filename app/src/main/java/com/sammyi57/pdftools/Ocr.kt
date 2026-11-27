@@ -63,7 +63,7 @@ object Ocr {
         t.utF8Text // runs the recognition
         collect(t, words, 0.0, bmp.width, bmp.height, 0, 0, out)
       } else {
-        t.pageSegMode = if (page.regions.size > 1) TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN else TessBaseAPI.PageSegMode.PSM_AUTO
+        t.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN
         for (r in page.regions) {
           // Each block is cut out and read as a picture of its own: pointing the engine at a rectangle of the whole page
           // (setRectangle) made it analyse the page around it and turn a clean body of text into rubbish.
@@ -110,15 +110,12 @@ object Ocr {
       if (words && it.isAtBeginningOf(TessBaseAPI.PageIteratorLevel.RIL_TEXTLINE)) flush()
       val text = it.getUTF8Text(level)?.trim().orEmpty()
       val r = it.getBoundingRect(level)
-      val conf = it.confidence(level)
       if (text.isNotEmpty() && r.width() > 0 && r.height() > 0) {
         val b = frac(r, angle, w, h, ox, oy)
         if (words) {
-          if (conf >= 30f) cur.add(OcrWord(text, b[0], b[1], b[2], b[3]))
+          cur.add(OcrWord(text, b[0], b[1], b[2], b[3]))
         } else {
-          // A dark page edge or a shadow comes back as "lines" of digits and symbols: low confidence, few real letters.
-          val real = text.count { c -> c.isLetter() }
-          if (real * 2 >= text.count { c -> !c.isWhitespace() } && conf >= 35f) out.add(OcrLine(text, b[0], b[1], b[2], b[3]))
+          out.add(OcrLine(text, b[0], b[1], b[2], b[3]))
         }
       }
     } while (it.next(level))

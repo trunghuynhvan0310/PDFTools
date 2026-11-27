@@ -385,6 +385,20 @@ private fun hasScanImage(res: PDResources?, depth: Int = 0): Boolean = res != nu
   }
 }
 
+/** The picture of a page that is just one scan filling it (same shape as the page, not turned), or null. */
+private fun pageScan(page: com.tom_roush.pdfbox.pdmodel.PDPage): Bitmap? {
+  if (((page.rotation % 360) + 360) % 360 != 0) return null
+  val res = page.resources ?: return null
+  val box = page.cropBox
+  val pics = res.xObjectNames.mapNotNull { runCatching { res.getXObject(it) }.getOrNull() as? PDImageXObject }
+    .filter { it.width >= 1000 && it.height >= 1000 }
+  val pic = pics.singleOrNull() ?: return null
+  val ratio = pic.width.toFloat() / pic.height
+  val want = box.width / box.height
+  if (kotlin.math.abs(ratio / want - 1f) > 0.03f) return null
+  return pic.image
+}
+
 /**
  * Makes a scanned PDF searchable: every page that has no real text is rendered, read by ML Kit, and given an invisible
  * text layer over the words, so find, select and copy work while the page looks the same. Fails with a message saying
@@ -409,17 +423,12 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
           val chars = realChars(stripper.getText(doc))
           if (chars >= (if (hasScanImage(doc.getPage(i).resources)) 300 else 50)) { searchable++; continue }
           // Boxes come back as fractions of the page, so the render resolution never reaches the text layer.
-          val lines = r.openPage(i).use { p ->
-            // 300 dpi (capped at 3600 px on the long side): tone marks and the hooks on ư, ơ are a few pixels at 216 dpi.
-            val scale = minOf(300f / 72f, 3600f / maxOf(p.width, p.height))
-            val bw = (p.width * scale).toInt().coerceAtLeast(1)
-            val bh = (p.height * bw.toFloat() / p.width).toInt().coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(Color.WHITE)
-            p.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+          fun read(bitmap: Bitmap): List<Triple<String, RectF, Float>>? {
+            val bw = bitmap.width
+            val bh = bitmap.height
             try {
               // Tesseract with the Vietnamese model first; ML Kit only if that can't start.
-              Ocr.lines(bitmap)?.mapNotNull { l ->
+              return Ocr.lines(bitmap)?.mapNotNull { l ->
                 val text = ocrText(l.text)
                 val width = if (text.isEmpty()) 0f else PdfFonts.width(text)
                 if (text.isEmpty() || width <= 0f) null else Triple(text, RectF(l.x0, l.y0, l.x1, l.y1), width)
@@ -436,6 +445,18 @@ fun ocrPdf(bytes: ByteArray): ByteArray {
               bitmap.recycle()
             }
           }
+          // A page that is one scanned picture is read from that picture as it was saved, not from a re-drawn copy of it.
+          val picture = runCatching { pageScan(doc.getPage(i)) }.getOrNull()
+          val lines = (if (picture != null) read(picture) else r.openPage(i).use { p ->
+            // 300 dpi (capped at 3600 px on the long side): tone marks and the hooks on ư, ơ are a few pixels at 216 dpi.
+            val scale = minOf(300f / 72f, 3600f / maxOf(p.width, p.height))
+            val bw = (p.width * scale).toInt().coerceAtLeast(1)
+            val bh = (p.height * bw.toFloat() / p.width).toInt().coerceAtLeast(1)
+            val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.WHITE)
+            p.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            read(bitmap)
+          }) ?: emptyList()
           if (lines.isEmpty()) continue
           val page = doc.getPage(i)
           val rot = ((page.rotation % 360) + 360) % 360
